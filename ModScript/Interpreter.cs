@@ -60,9 +60,36 @@ namespace ModScript
                     if (res.error != null)
                         return res;
                     return res.Succes(Ot);
+                case "InnerAsign":
+                    Ot = res.Register(VisitSetInner(node, context));
+                    if (res.error != null)
+                        return res;
+                    return res.Succes(Ot);
                 default:
                     throw new Exception("Visit not defined");
             }
+        }
+
+        static RTResult VisitSetInner(PNode node, Context context)
+        {
+            RTResult res = new RTResult();
+            LToken toCall = res.Register(Visit(node.PNodes[0], context));
+            if (res.error != null)
+                return res;
+            if (toCall.value.type == "LIST")
+            {
+                LToken v = res.Register(Visit(node.PNodes[1], context));
+                if (res.error != null)
+                    return res;
+                if (v.value.type != "INT")
+                    return res.Failure(new RuntimeError(v.position, "Element argument has to be an integer.", context));
+                LToken exp = res.Register(Visit(node.PNodes[2], context));
+                if (res.error != null)
+                    return res;
+                toCall.value.values[v.value.integer] = exp.value;
+                return res.Succes(exp.SetContext(context));
+            }
+            return res.Failure(new RuntimeError(toCall.position, "List expected", context));
         }
 
         static RTResult VisitGetInner(PNode node, Context context)

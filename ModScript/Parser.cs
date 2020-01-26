@@ -208,9 +208,10 @@ namespace ModScript
                 if (current.type != TokenType.RSQBR)
                     return res.Failure(new InvalidSyntaxError(current.position, "Expected ']'"));
                 res.Register(Next());
-                return call(res.Succes(PNode.GetCall("GetInner", at, new List<PNode>() {n})));
+                res.isInnnerCall = true;
+                return call(res.Succes(PNode.GetCall("GetInner", at, new List<PNode>() {n}), true));
             }
-            return res.Succes(at);
+            return res.Succes(at, true);
         }
 
         ParseResult Power()
@@ -219,8 +220,10 @@ namespace ModScript
             PNode left = res.Register(call(atom()));
             if (res.error != null)
                 return res;
+            bool b = true;
             while (TokenType.POW == current.type)
             {
+                b = false;
                 LToken opT = current;
                 res.Register(Next());
                 PNode r = res.Register(factor());
@@ -228,6 +231,8 @@ namespace ModScript
                     return res;
                 left = PNode.GetBinOP(left, opT, r);
             }
+            if(b)
+                return res.Succes(left, true);
             return res.Succes(left);
         }
 
@@ -312,6 +317,24 @@ namespace ModScript
             PNode node = res.Register(BinOP(comp_expr, TokenType.AND | TokenType.OR));
             if (res.error != null)
                 return res.Failure(new InvalidSyntaxError(current.position, "Expected, let, number, identifier, plus, minus or parenthesis"));
+            if (res.isInnnerCall)
+            {
+                if ((current.type & TokenType.EQUAL) != 0)
+                {
+                    TokenType t = current.type;
+                    res.Register(Next());
+                    PNode exp = res.Register(expr());
+                    if (res.error != null)
+                        return res;
+                    if ((t & (TokenType.ADD | TokenType.SUB | TokenType.MULT | TokenType.DIV | TokenType.POW)) != 0)
+                        exp = PNode.GetBinOP(node, new LToken(t ^ TokenType.EQUAL), exp);
+
+                    List<PNode> pns = new List<PNode>(node.PNodes);
+                    pns.RemoveAt(0);
+                    pns.Add(exp);
+                    return res.Succes(PNode.GetCall("InnerAsign", node.PNodes[0], pns));
+                }
+            }
             return res.Succes(node);
         }
 
@@ -323,10 +346,12 @@ namespace ModScript
 
             ParseResult res = new ParseResult();
             PNode left = res.Register(func());
+            bool b = true;
             if (res.error != null)
                 return res;
-            while ((type & current.type) != 0)
+            while ((type & current.type) != 0 && (current.type & TokenType.EQUAL) == 0)
             {
+                b = false;
                 LToken opT = current;
                 res.Register(Next());
                 PNode r = res.Register(rop());
@@ -334,6 +359,8 @@ namespace ModScript
                     return res;
                 left = PNode.GetBinOP(left, opT, r);
             }
+            if(b)
+                return res.Succes(left, true);
             return res.Succes(left);
         }
     }
@@ -343,15 +370,17 @@ namespace ModScript
         public PNode node;
         public Error error;
         int advanceC = 0;
-        bool isInnnerCall = false;
+        public bool isInnnerCall = false;
 
         public PNode Register(ParseResult res)
         {
             advanceC += res.advanceC;
+            isInnnerCall = res.isInnnerCall;
             if (res.error != null)
                 error = res.error;
             return res.node;
         }
+
         public PNode Register(PNode node)
         { 
             return node;
@@ -362,6 +391,12 @@ namespace ModScript
             return null;
         }
         public ParseResult Succes(PNode _node)
+        {
+            isInnnerCall = false;
+            node = _node;
+            return this;
+        }
+        public ParseResult Succes(PNode _node, bool b)
         {
             node = _node;
             return this;

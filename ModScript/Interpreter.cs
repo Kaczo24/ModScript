@@ -11,6 +11,7 @@ namespace ModScript
         {
             RTResult res = new RTResult();
             LToken Ot;
+            Function f;
             switch (node.TYPE)
             {
                 case "VALUE":
@@ -36,12 +37,10 @@ namespace ModScript
                         return res;
                     return res.Succes(Ot);
                 case "FuncDef":
-                    {
-                        Function f = new Function(node.val, node.right, node.LTokens.ConvertAll(x => x.value.text));
-                        if (node.val.value != null)
-                            context.varlist[node.val.value.text] = new LToken(TokenType.VALUE, new Value(f)).SetContext(context);
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(f)).SetContext(context));
-                    }
+                    f = new Function(node.val, node.right, node.LTokens.ConvertAll(x => x.value.text));
+                    if (node.val.value != null)
+                        context.varlist[node.val.value.text] = new LToken(TokenType.VALUE, new Value(f)).SetContext(context);
+                    return res.Succes(new LToken(TokenType.VALUE, new Value(f)).SetContext(context));
                 case "CallFunc":
                     Ot = res.Register(VisitCall(node, context));
                     if (res.error != null)
@@ -56,9 +55,32 @@ namespace ModScript
                             return res;
                     }
                     return res.Succes(new LToken(TokenType.VALUE, new Value(values), node.val.position));
+                case "GetInner":
+                    Ot = res.Register(VisitGetInner(node, context));
+                    if (res.error != null)
+                        return res;
+                    return res.Succes(Ot);
                 default:
                     throw new Exception("Visit not defined");
             }
+        }
+
+        static RTResult VisitGetInner(PNode node, Context context)
+        {
+            RTResult res = new RTResult();
+            LToken toCall = res.Register(Visit(node.PNodes[0], context));
+            if (res.error != null)
+                return res;
+            if (toCall.value.type == "LIST")
+            {
+                LToken v = res.Register(Visit(node.PNodes[1], context));
+                if (res.error != null)
+                    return res;
+                if(v.value.type != "INT")
+                    return res.Failure(new RuntimeError(v.position, "Element argument has to be an integer.", context));
+                return res.Succes(new LToken(TokenType.VALUE, toCall.value.values[v.value.integer], toCall.position).SetContext(context));
+            }
+            return res.Failure(new RuntimeError(toCall.position, "List expected", context));
         }
 
         static RTResult VisitCall(PNode node, Context context)

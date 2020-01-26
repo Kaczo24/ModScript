@@ -91,7 +91,7 @@ namespace ModScript
             PNode ret = res.Register(expr());
             if (res.error != null)
                 return res;
-            return res.Succes(new PNode(FName, args, ret));
+            return res.Succes(PNode.GetFuncDef(FName, args, ret));
         }
 
         ParseResult list_expr()
@@ -168,10 +168,10 @@ namespace ModScript
             return res.Failure(new InvalidSyntaxError(current.position, "Expected number, identifier, plus, minus or parenthesis"));
         }
 
-        ParseResult call()
+        ParseResult call(ParseResult toCall)
         {
             ParseResult res = new ParseResult();
-            PNode at = res.Register(atom());
+            PNode at = res.Register(toCall);
             if (res.error != null)
                 return res;
 
@@ -197,12 +197,39 @@ namespace ModScript
                         return res.Failure(new InvalidSyntaxError(current.position, "Expected ',' or ')'"));
                     res.Register(Next());
                 }
-                return res.Succes(new PNode(at, args));
+                return call(res.Succes(PNode.GetCall("CallFunc", at, args)));
+            }
+            else if(current.type == TokenType.LSQBR)
+            {
+                res.Register(Next());
+                if (current.type == TokenType.RSQBR)
+                    return res.Failure(new InvalidSyntaxError(current.position, "Expected int"));
+                PNode n = res.Register(expr());
+                if (current.type != TokenType.RSQBR)
+                    return res.Failure(new InvalidSyntaxError(current.position, "Expected ']'"));
+                res.Register(Next());
+                return call(res.Succes(PNode.GetCall("GetInner", at, new List<PNode>() {n})));
             }
             return res.Succes(at);
         }
 
-        ParseResult Power() => BinOP(call, TokenType.POW, factor);
+        ParseResult Power()
+        {
+            ParseResult res = new ParseResult();
+            PNode left = res.Register(call(atom()));
+            if (res.error != null)
+                return res;
+            while (TokenType.POW == current.type)
+            {
+                LToken opT = current;
+                res.Register(Next());
+                PNode r = res.Register(factor());
+                if (res.error != null)
+                    return res;
+                left = PNode.GetBinOP(left, opT, r);
+            }
+            return res.Succes(left);
+        }
 
         ParseResult factor()
         {
@@ -277,7 +304,7 @@ namespace ModScript
                     if (res.error != null)
                         return res;
                     if ((t & (TokenType.ADD | TokenType.SUB | TokenType.MULT | TokenType.DIV | TokenType.POW)) != 0)
-                        exp = new PNode(new PNode("VarGet", Vname), new LToken(t ^ TokenType.EQUAL), exp);
+                        exp = PNode.GetBinOP(new PNode("VarGet", Vname), new LToken(t ^ TokenType.EQUAL), exp);
                     return res.Succes(new PNode("VarAsign", Vname, exp));
                 }
                 res.Register(Back());
@@ -305,7 +332,7 @@ namespace ModScript
                 PNode r = res.Register(rop());
                 if (res.error != null)
                     return res;
-                left = new PNode(left, opT, r);
+                left = PNode.GetBinOP(left, opT, r);
             }
             return res.Succes(left);
         }
@@ -316,6 +343,7 @@ namespace ModScript
         public PNode node;
         public Error error;
         int advanceC = 0;
+        bool isInnnerCall = false;
 
         public PNode Register(ParseResult res)
         {

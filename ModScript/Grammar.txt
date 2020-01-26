@@ -3,8 +3,8 @@
 
 
 expr			: KEYWORD:let INDETIFIER EQUAL expr
-				: INDETIFIER EQUAL expr
-				: INDETIFIER (ADD|SUB|MULT|DIV|POW|MOD)-EQUAL expr
+				: INDETIFIER (ADD|SUB|MULT|DIV|POW|MOD)?-EQUAL expr
+				: call LSQBR NUMBER RSQBR (ADD|SUB|MULT|DIV|POW|MOD)?-EQUAL expr
 				: comp-expr ((AND|OR) comp-expr)*
 
 
@@ -25,8 +25,9 @@ factor			: (ADD|SUB) factor
 power			: call (POW factor)*
 
 
-call			: call LSQBR NUMBER RSQBR								---
-				: atom (LPAR (expr (COMMA expr)*)? RPAR)?
+call			: call LSQBR NUMBER RSQBR
+				: call LPAR (expr (COMMA expr)*)? RPAR
+				: atom
 
 
 atom			: VALUE|INDETIFIER

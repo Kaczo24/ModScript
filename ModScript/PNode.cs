@@ -13,17 +13,20 @@ namespace ModScript
         public string TYPE;
         public List<PNode> PNodes;
         public List<LToken> LTokens;
+        PNode() { }
         public PNode(LToken _val)
         {
             TYPE = _val.type.ToString();
             val = _val;
         }
-        public PNode(PNode _left, LToken _opToken, PNode _right)
+        public static PNode GetBinOP(PNode _left, LToken _opToken, PNode _right)
         {
-            TYPE = "BinOp";
-            left = _left;
-            val = _opToken;
-            right = _right;
+            PNode n = new PNode();
+            n.TYPE = "BinOp";
+            n.left = _left;
+            n.val = _opToken;
+            n.right = _right;
+            return n;
         }
         public PNode(string _TYPE, LToken _opToken, PNode node)
         {
@@ -42,18 +45,22 @@ namespace ModScript
             PNodes = _PNodes;
             val = pos;
         }
-        public PNode(LToken fName, List<LToken> args, PNode _node)
+        public static PNode GetFuncDef(LToken fName, List<LToken> args, PNode _node)
         {
-            TYPE = "FuncDef";
-            val = fName;
-            LTokens = args;
-            right = _node;
+            PNode n = new PNode();
+            n.TYPE = "FuncDef";
+            n.val = fName;
+            n.LTokens = args;
+            n.right = _node;
+            return n;
         }
-        public PNode(PNode fName, List<PNode> args)
+        public static PNode GetCall(string _TYPE, PNode fName, List<PNode> args)
         {
-            TYPE = "CallFunc";
-            PNodes = args;
-            PNodes.Insert(0, fName);
+            PNode n = new PNode();
+            n.TYPE = _TYPE;
+            n.PNodes = args;
+            n.PNodes.Insert(0, fName);
+            return n;
         }
         public override string ToString()
         {

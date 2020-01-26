@@ -1,0 +1,6 @@
+C:\Users\Mateusz\source\repos\ModScript\ModScript\bin\Debug\ModScript.exe.config
+C:\Users\Mateusz\source\repos\ModScript\ModScript\bin\Debug\ModScript.exe
+C:\Users\Mateusz\source\repos\ModScript\ModScript\bin\Debug\ModScript.pdb
+C:\Users\Mateusz\source\repos\ModScript\ModScript\obj\Debug\ModScript.csprojAssemblyReference.cache
+C:\Users\Mateusz\source\repos\ModScript\ModScript\obj\Debug\ModScript.exe
+C:\Users\Mateusz\source\repos\ModScript\ModScript\obj\Debug\ModScript.pdb

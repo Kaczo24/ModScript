@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29424.173
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModScript", "ModScript\ModScript.csproj", "{2C5C6095-53DE-4729-8329-44E18487171A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2C5C6095-53DE-4729-8329-44E18487171A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C5C6095-53DE-4729-8329-44E18487171A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C5C6095-53DE-4729-8329-44E18487171A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C5C6095-53DE-4729-8329-44E18487171A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {032DEB9A-973F-4A39-9489-510A7976D1C2}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,53 @@
+﻿body-statement	: LBRACK (expr NLINE)* RBRACK							---
+				: ARROW expr											---
+
+
+expr			: KEYWORD:let INDETIFIER EQUAL expr
+				: INDETIFIER EQUAL expr
+				: INDETIFIER (ADD|SUB|MULT|DIV|POW|MOD)-EQUAL expr
+				: comp-expr ((AND|OR) comp-expr)*
+
+
+comp-expr		: NOT comp-expr
+				: aryth-expr ((EE|NE|LT|GT|LTE|GTE) aryth-expr)*
+
+
+arith-expr		: term ((ADD|SUB) term)*
+
+
+term			: factor ((MULT|DIV|MOD) factor)*
+
+
+factor			: (ADD|SUB) factor
+				: power
+
+
+power			: call (POW factor)*
+
+
+call			: call LSQBR NUMBER RSQBR								---
+				: atom (LPAR (expr (COMMA expr)*)? RPAR)?
+
+
+atom			: VALUE|INDETIFIER
+				: list-expr
+				: LPAR expr RPAR
+				: func-def
+
+
+list-expr		: LSQBR (expr (COMMA expr)*)? RSQBR
+
+
+func-def		: KEYWORD:function INDETIFIER? LPAR (INDETIFIER (COMMA INDETIFIER)*)? RPAR
+				  (ARROW expr)
+
+
+
+
+
+ANY (==|!=) ANY
+NUMBER (+|-|*|/|^|<|<=|>|>=) NUMBER
+STR (+) ANY
+ANY (+) STR
+BOOL (&& | ||) BOOL
+LIST (+) LIST

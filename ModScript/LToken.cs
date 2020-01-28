@@ -57,7 +57,7 @@ namespace ModScript
         public TokenType type;
         public Value value;
         public TextPosition position { get; set; }
-        public Context context;
+
         public LToken(TokenType _type, TextPosition pos)
         {
             type = _type;
@@ -80,9 +80,15 @@ namespace ModScript
         }
         public LToken SetContext(Context _context)
         {
-            context = _context;
+            value.SetContext(_context);
             return this;
         }
+
+        public LToken Copy()
+        {
+            return new LToken(type, value.Copy(), position.Copy());
+        }
+
         public override string ToString()
         {
             if (value == null)
@@ -94,6 +100,7 @@ namespace ModScript
     class Function
     {
         LToken name;
+        Value parent;
         PNode body;
         List<string> argNames;
         public Function(LToken _name, PNode node, List<string> args)
@@ -106,19 +113,25 @@ namespace ModScript
             argNames = args;
         }
 
-        public RTResult Execute(List<LToken> args, Context context, TextPosition pos)
+        public Function SetParent(Value v)
+        {
+            parent = v;
+            return this;
+        }
+
+        public RTResult Execute(List<LToken> args, TextPosition pos)
         {
             RTResult res = new RTResult();
-            Context ctx = new Context(name.value.text, context, pos);
-            ctx.varlist = new VarList(context.varlist);
+            Context ctx = new Context(name.value.text, parent.context, pos);
+            ctx.varlist = new VarList(parent.context.varlist);
             if (args.Count != argNames.Count)
-                return res.Failure(new RuntimeError(pos, $"This function reqires {argNames.Count} arguments, insted of {args.Count}.", context));
+                return res.Failure(new RuntimeError(pos, $"This function reqires {argNames.Count} arguments, insted of {args.Count}.", parent.context));
             for (int n = 0; n < args.Count; n++)
                 ctx.varlist[argNames[n]] = args[n].SetContext(ctx);
             LToken t = res.Register(Interpreter.Visit(body, ctx));
             if (res.error != null)
                 return res;
-            return res.Succes(t);
+            return res.Succes(t.SetContext(ctx));
         }
 
         public Function Copy()
@@ -141,6 +154,9 @@ namespace ModScript
         public double Float;
         public List<Value> values;
         public Function function;
+        public Context context;
+
+        public static Value NULL = new Value();
         public double number
         {
             get
@@ -166,6 +182,10 @@ namespace ModScript
         }
         public int integer;
         public bool boolean;
+        public Value()
+        {
+            type = "NULL";
+        }
         public Value(string s)
         {
             text = s;
@@ -213,7 +233,26 @@ namespace ModScript
         public Value(Function f)
         {
             type = "FUNC";
-            function = f;
+            function = f.SetParent(this);
+        }
+        public Value SetContext(Context _context)
+        {
+            context = _context;
+            return this;
+        }
+
+        public Value Copy()
+        {
+            Value v = new Value();
+            v.boolean = boolean;
+            v.Float = Float;
+            if (type == "FUNC")
+                v.function = function.Copy();
+            v.integer = integer;
+            v.text = text;
+            v.type = type;
+            v.SetContext(context.Copy());
+            return v;
         }
         public override string ToString()
         {

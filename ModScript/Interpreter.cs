@@ -15,7 +15,7 @@ namespace ModScript
             switch (node.TYPE)
             {
                 case "VALUE":
-                    return res.Succes(node.val.SetContext(context));
+                    return res.Succes(node.val);
                 case "VarAsign":
                 case "VarMake":
                     Ot = res.Register(VisitVarAsign(node, context));
@@ -25,7 +25,7 @@ namespace ModScript
                 case "VarGet":
                     if (!context.varlist.ContainsKey(node.val.value.text))
                         return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is not defined", context));
-                    return res.Succes(context.varlist[node.val.value.text].SetContext(context));
+                    return res.Succes(context.varlist[node.val.value.text]);
                 case "BinOp":
                     Ot = res.Register(VisitBinOp(node, context));
                     if (res.error != null)
@@ -105,7 +105,11 @@ namespace ModScript
                     return res;
                 if(v.value.type != "INT")
                     return res.Failure(new RuntimeError(v.position, "Element argument has to be an integer.", context));
-                return res.Succes(new LToken(TokenType.VALUE, toCall.value.values[v.value.integer], toCall.position).SetContext(context));
+                if(v.value.integer < 0)
+                    return res.Failure(new RuntimeError(v.position, "Element argument cannot be less then 0.", context));
+                if (v.value.integer < toCall.value.values.Count && v.value.integer >= 0)
+                    return res.Succes(new LToken(TokenType.VALUE, toCall.value.values[v.value.integer], toCall.position).SetContext(context));
+                return res.Succes(new LToken(TokenType.VALUE, Value.NULL, toCall.position).SetContext(context));
             }
             return res.Failure(new RuntimeError(toCall.position, "List expected", context));
         }
@@ -125,7 +129,7 @@ namespace ModScript
                 if (res.error != null)
                     return res;
             }
-            LToken t = res.Register(toCall.value.function.Execute(args, context, node.PNodes[0].val.position));
+            LToken t = res.Register(toCall.value.function.Execute(args, toCall.position));
             if (res.error != null)
                 return res;
             return res.Succes(t);
@@ -145,7 +149,7 @@ namespace ModScript
             LToken n = res.Register(Visit(node.right, context));
             if (res.error != null)
                 return res;
-            LToken Val = new LToken(TokenType.VALUE, n.value, node.val.position).SetContext(context);
+            LToken Val = new LToken(TokenType.VALUE, n.value, node.val.position).SetContext(n.value.context);
             context.varlist[node.val.value.text] = Val;
             return res.Succes(Val);
         }
@@ -172,20 +176,20 @@ namespace ModScript
                 switch (node.val.type)
                 {
                     case TokenType.ADD:
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number + r.value.number), l.position).SetContext(l.context));
+                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number + r.value.number), l.position).SetContext(l.value.context));
                     case TokenType.SUB:
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number - r.value.number), l.position).SetContext(l.context));
+                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number - r.value.number), l.position).SetContext(l.value.context));
                     case TokenType.MULT:
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number * r.value.number), l.position).SetContext(l.context));
+                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number * r.value.number), l.position).SetContext(l.value.context));
                     case TokenType.DIV:
                         if (r.value.number == 0)
                             res.Failure(new RuntimeError(node.val.position, "Division by zero error"));
 
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number / r.value.number), l.position).SetContext(l.context));
+                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number / r.value.number), l.position).SetContext(l.value.context));
                     case TokenType.POW:
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(Math.Pow(l.value.number, r.value.number)), l.position).SetContext(l.context));
+                        return res.Succes(new LToken(TokenType.VALUE, new Value(Math.Pow(l.value.number, r.value.number)), l.position).SetContext(l.value.context));
                     case TokenType.MOD:
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number % r.value.number), l.position).SetContext(l.context));
+                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number % r.value.number), l.position).SetContext(l.value.context));
                     case TokenType.GT:
                         return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number > r.value.number), l.position).SetContext(context));
                     case TokenType.LT:
@@ -200,9 +204,9 @@ namespace ModScript
                 switch (node.val.type)
                 {
                     case TokenType.AND:
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.boolean && r.value.boolean), l.position).SetContext(l.context));
+                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.boolean && r.value.boolean), l.position).SetContext(l.value.context));
                     case TokenType.OR:
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.boolean || r.value.boolean), l.position).SetContext(l.context));
+                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.boolean || r.value.boolean), l.position).SetContext(l.value.context));
                 }
             else if (l.value.type == "LIST" && r.value.type == "LIST")
                 switch (node.val.type)
@@ -210,13 +214,13 @@ namespace ModScript
                     case TokenType.ADD:
                         List<Value> Vs = new List<Value>(l.value.values.ToArray());
                         Vs.AddRange(r.value.values);
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(Vs), l.position).SetContext(l.context));
+                        return res.Succes(new LToken(TokenType.VALUE, new Value(Vs), l.position).SetContext(l.value.context));
                 }
             else if(l.value.type == "STRING" || r.value.type == "STRING")
                 switch (node.val.type)
                 {
                     case TokenType.ADD:
-                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.ToString() + r.value.ToString()), l.position).SetContext(l.context));
+                        return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.ToString() + r.value.ToString()), l.position).SetContext(l.value.context));
                 }
 
 
@@ -232,10 +236,10 @@ namespace ModScript
 
             if (node.val.type == TokenType.SUB)
                 if (n.value.isNumber)
-                    return res.Succes(new LToken(TokenType.VALUE, new Value(-n.value.number)).SetContext(n.context));
+                    return res.Succes(new LToken(TokenType.VALUE, new Value(-n.value.number)).SetContext(n.value.context));
             if (node.val.type == TokenType.NOT)
                 if (n.value.type == "BOOLEAN")
-                    return res.Succes(new LToken(TokenType.VALUE, new Value(!n.value.boolean)).SetContext(n.context));
+                    return res.Succes(new LToken(TokenType.VALUE, new Value(!n.value.boolean)).SetContext(n.value.context));
                 else
                     return res.Failure(new RuntimeError(n.position, "Expected boolean", context));
             return res.Succes(n);
@@ -280,6 +284,17 @@ namespace ModScript
             parent = _parent;
             parentEntry = _parentEntry;
         }
+
+        public Context Copy()
+        {
+            Context c;
+            if (parent != null)
+                c = new Context(name, parent.Copy(), parentEntry.Copy());
+            else
+                c = new Context(name);
+            c.varlist = varlist.Copy();
+            return c;
+        }
     }
 
     class VarList : Dictionary<string, LToken>
@@ -303,7 +318,7 @@ namespace ModScript
         {
             get
             {
-                if (ContainsKey(s))
+                if (base.ContainsKey(s))
                     return base[s];
                 else if (parent != null)
                     return parent[s];
@@ -313,6 +328,14 @@ namespace ModScript
             {
                 base[s] = value;
             }
+        }
+
+        public VarList Copy()
+        {
+            VarList v = new VarList(parent);
+            foreach (string s in Keys)
+                v[s] = this[s];
+            return v;
         }
     }
 

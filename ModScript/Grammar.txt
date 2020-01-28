@@ -1,6 +1,7 @@
 ﻿body-statement	: LBRACK (expr NLINE)* RBRACK							---
 				: ARROW expr											---
 
+statement		:
 
 expr			: KEYWORD:let INDETIFIER EQUAL expr
 				: INDETIFIER (ADD|SUB|MULT|DIV|POW|MOD)?-EQUAL expr

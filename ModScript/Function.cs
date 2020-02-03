@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+
 
 namespace ModScript
 {
@@ -64,11 +66,15 @@ namespace ModScript
             { "Input", new Tuple<Predef, int>(PredefFunc.Input, 0)},
             { "InputN", new Tuple<Predef, int>(PredefFunc.InputN, 0)},
 
-
             { "Sqrt", new Tuple<Predef, int>(PredefFunc.sqrt, 1)},
 
+            { "ReadText", new Tuple<Predef, int>(PredefFunc.ReadText, 1)},
+            { "ReadLines", new Tuple<Predef, int>(PredefFunc.ReadLines, 1)},
+            { "WriteText", new Tuple<Predef, int>(PredefFunc.WriteText, 2)},
+            { "WriteLines", new Tuple<Predef, int>(PredefFunc.WriteLines, 2)},
 
             { "GetType", new Tuple<Predef, int>(PredefFunc.GetType, 1)},
+            { "ParseNumber", new Tuple<Predef, int>(PredefFunc.ParseNumber, 1)},
 
         };
     }
@@ -109,12 +115,63 @@ namespace ModScript
 
         #endregion
         #region File
+        public static RTResult ReadLines(Context ctx)
+        {
+            RTResult res = new RTResult();
+            if (ctx.varlist["_ARG0"].value.type != "STRING")
+                return res.Failure(new RuntimeError(ctx.parentEntry, "File path has to be a string", ctx));
+            if(!File.Exists(ctx.varlist["_ARG0"].value.text))
+                return res.Failure(new RuntimeError(ctx.parentEntry, $"File '{ctx.varlist["_ARG0"].value.text}' does not exist.", ctx));
+            return res.Succes(new LToken(TokenType.VALUE, new Value(new List<string>(File.ReadAllLines(ctx.varlist["_ARG0"].value.text)).ConvertAll(x => new Value(x))), ctx.parentEntry).SetContext(ctx));
+        }
+        public static RTResult ReadText(Context ctx)
+        {
+            RTResult res = new RTResult();
+            if (ctx.varlist["_ARG0"].value.type != "STRING")
+                return res.Failure(new RuntimeError(ctx.parentEntry, "File path has to be a string", ctx));
+            if (!File.Exists(ctx.varlist["_ARG0"].value.text))
+                return res.Failure(new RuntimeError(ctx.parentEntry, $"File '{ctx.varlist["_ARG0"].value.text}' does not exist.", ctx));
+            return res.Succes(new LToken(TokenType.VALUE, new Value(File.ReadAllText(ctx.varlist["_ARG0"].value.text)), ctx.parentEntry).SetContext(ctx));
+        }
+        public static RTResult WriteText(Context ctx)
+        {
+            RTResult res = new RTResult();
+            if (ctx.varlist["_ARG0"].value.type != "STRING")
+                return res.Failure(new RuntimeError(ctx.parentEntry, "File path has to be a string", ctx));
+            if (ctx.varlist["_ARG1"].value.type != "STRING")
+                return res.Failure(new RuntimeError(ctx.parentEntry, "Data to write has to be a string", ctx));
 
+            File.WriteAllText(ctx.varlist["_ARG0"].value.text, ctx.varlist["_ARG1"].value.text);
+            return res.Succes(new LToken(TokenType.VALUE, Value.NULL, ctx.parentEntry).SetContext(ctx));
+        }
+        public static RTResult WriteLines(Context ctx)
+        {
+            RTResult res = new RTResult();
+            if (ctx.varlist["_ARG0"].value.type != "STRING")
+                return res.Failure(new RuntimeError(ctx.parentEntry, "File path has to be a string", ctx));
+            if (ctx.varlist["_ARG1"].value.type != "LIST")
+                return res.Failure(new RuntimeError(ctx.parentEntry, "Data to write has to be a list", ctx));
+            if(!ctx.varlist["_ARG1"].value.values.TrueForAll(x => x.type == "STRING"))
+                return res.Failure(new RuntimeError(ctx.parentEntry, "Data to write has to be a list of strings", ctx));
+
+            File.WriteAllLines(ctx.varlist["_ARG0"].value.text, ctx.varlist["_ARG1"].value.values.ConvertAll(x => x.text));
+            return res.Succes(new LToken(TokenType.VALUE, Value.NULL, ctx.parentEntry).SetContext(ctx));
+        }
         #endregion
         #region Miscellaneous
         public static RTResult GetType(Context ctx)
         {
             return new RTResult().Succes(new LToken(TokenType.VALUE, new Value(ctx.varlist["_ARG0"].value.type), ctx.parentEntry).SetContext(ctx));
+        }
+        public static RTResult ParseNumber(Context ctx)
+        {
+            RTResult res = new RTResult();
+            if (ctx.varlist["_ARG0"].value.type != "STRING")
+                return res.Failure(new RuntimeError(ctx.parentEntry, "File path has to be a string", ctx));
+            double d;
+            if (!double.TryParse(ctx.varlist["_ARG0"].value.text.Replace('.', ','), out d))
+                d = 0;
+            return res.Succes(new LToken(TokenType.VALUE, new Value(d), ctx.parentEntry).SetContext(ctx));
         }
         #endregion
     }

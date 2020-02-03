@@ -1,0 +1,77 @@
+﻿Math:
+	+ : addition
+	- : substraction
+	* : multiplication
+	/ : division
+	^ : power
+	% : modulo
+
+Primitive Data Types:
+	(-)####.#### : Number(float) where # is digit
+	(-)######### : Number(int) where # is digit
+	"XXXXXXX" : String where X is character
+	[D, D, D] : List where D is Data
+	true|false: boolean
+
+To asign a new variable use:
+	let IDENTIFIER = {expresion};
+
+To edit a variable use:
+	IDENTIFIER = {expresion}
+	IDENTIFIER += {expresion};
+	IDENTIFIER -= {expresion};
+	IDENTIFIER *= {expresion};
+	IDENTIFIER /= {expresion};
+	IDENTIFIER ^= {expresion};
+	IDENTIFIER %= {expresion};
+
+Comparison operators:
+	== : equals
+	!= : not equals
+	< : less then
+	<= : less then or equals
+	> : more then
+	>= : more then or equals
+
+Boolean operators:
+	&& : and
+	|| : or
+	!  : not
+
+String operators:
+	+ : concatination
+
+List operators:
+	+ : concatination
+	LIST[index] : data in LIST at index
+
+Function definition:
+	function IDENTIFIER(arg1Name, arg2Name ...)
+		{ code of definition } | => line of result;
+	IDENTIFIER = function(arg1Name, arg2Name ...)			as anonymous primitive
+		{ code of definition } | => line of result;
+
+If statement:
+	if (boolean)
+		{ code to execute } | line to execute;
+
+While statement:
+	while (boolean)
+		{ code to execute } | line to execute;
+
+
+Predefined Functions:
+	Print(arg0) : prints arg0 to console
+	Printl(arg0) : prints arg0 to console and ends the line
+	Input() : requests a line of text from console, and returns it
+	InputN() : requests a number from console, and returns it
+
+	Sqrt(arg0) : returns a square root of arg0
+
+	ReadText(arg0) : returns all text in file named arg0
+	ReadLines(arg0) : returns all lines as a list in file named arg0
+	WriteText(arg0, arg1) : writes arg1 to file named arg0
+	WriteLines(arg0, arg1) : writes arg1(list of lines) to file named arg0
+
+	GetType(arg0) : returns a string of the name of type of arg0
+	ParseNumber(arg0) : tries to parse arg0(text) to number, and returns it

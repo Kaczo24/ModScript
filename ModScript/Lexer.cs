@@ -34,7 +34,7 @@ namespace ModScript
             TextPosition pos = new TextPosition(0,0,0,fileName, text);
             while(pos.index < text.Length)
             {
-                if(" \t\n".Contains(text[pos.index]))
+                if(" \t\n\r".Contains(text[pos.index]))
                 {
                     pos.Step();
                     continue;

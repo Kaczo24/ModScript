@@ -71,7 +71,7 @@ namespace ModScript
             if (TYPE == "VarAsign")
                 return $"({val.value}, EQUALS, {right})";
             if (TYPE == "VarGet")
-                return $"(GET:{val.value}";
+                return $"(GET:{val.value})";
             return $"({TYPE}:{val})";
         }
     }

@@ -9,10 +9,10 @@ namespace ModScript
     {
         static void Main(string[] args)
         {
+            Compiler.Prepare();
             if (args.Length == 1)
             {
-                foreach (string s in File.ReadAllLines(args[0]))
-                    Compiler.Run(s);
+                Compiler.Run(File.ReadAllText(args[0]));
                 Console.Read();
                 return;
             }
@@ -21,7 +21,6 @@ namespace ModScript
                 Console.Write("ModScript> ");
                 string inp = Console.ReadLine();
                 Compiler.Run(inp);
-                //Console.WriteLine(Compiler.Run(inp));
                 Console.WriteLine();
             }
         }

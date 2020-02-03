@@ -17,7 +17,7 @@ namespace ModScript
         {
             tokens = _tokens;
             Next();
-            ParseResult res = expr();
+            ParseResult res = Statements();
             if (res.error != null)
                 error = res.error;
             else
@@ -36,9 +36,9 @@ namespace ModScript
             return current;
         }
 
-        LToken Back()
+        LToken Back(int n = 1)
         {
-            index--;
+            index -= n;
             if (index >= 0)
                 current = tokens[index];
             return current;
@@ -51,7 +51,7 @@ namespace ModScript
                 return res.Failure(new InvalidSyntaxError(current.position, "Expected function keyword"));
             LToken FName = new LToken(TokenType.VALUE, null, current.position);
             res.Register(Next());
-            if(current.type == TokenType.IDENTIFIER)
+            if (current.type == TokenType.IDENTIFIER)
             {
                 FName = new LToken(TokenType.VALUE, new Value(current.value.text), current.position);
                 res.Register(Next());
@@ -65,7 +65,7 @@ namespace ModScript
             }
             res.Register(Next());
             List<LToken> args = new List<LToken>();
-            if(current.type == TokenType.IDENTIFIER)
+            if (current.type == TokenType.IDENTIFIER)
             {
                 args.Add(new LToken(TokenType.VALUE, new Value(current.value.text), current.position));
                 res.Register(Next());
@@ -80,11 +80,11 @@ namespace ModScript
                 if (current.type != TokenType.RPAR)
                     return res.Failure(new InvalidSyntaxError(current.position, "Expected ')' or ','"));
             }
-            else if(current.type != TokenType.RPAR)
+            else if (current.type != TokenType.RPAR)
                 return res.Failure(new InvalidSyntaxError(current.position, "Expected ')'"));
 
             res.Register(Next());
-           
+
             if (current.type != TokenType.ARROW)
                 return res.Failure(new InvalidSyntaxError(current.position, "Expected '=>'"));
             res.Register(Next());
@@ -141,14 +141,14 @@ namespace ModScript
                     return res.Failure(new InvalidSyntaxError(current.position, "Expected ')'"));
 
             }
-            else if(t.type == TokenType.LSQBR)
+            else if (t.type == TokenType.LSQBR)
             {
                 PNode n = res.Register(list_expr());
                 if (res.error != null)
                     return res;
                 return res.Succes(n);
             }
-            else if(t.type == TokenType.IDENTIFIER)
+            else if (t.type == TokenType.IDENTIFIER)
             {
                 res.Register(Next());
                 return res.Succes(new PNode("VarGet", t));
@@ -158,7 +158,7 @@ namespace ModScript
                 res.Register(Next());
                 return res.Succes(new PNode(t));
             }
-            else if(t.type == TokenType.KEYWORD && t.value.text == "function")
+            else if (t.type == TokenType.KEYWORD && t.value.text == "function")
             {
                 PNode fd = res.Register(Func_Def());
                 if (res.error != null)
@@ -199,7 +199,7 @@ namespace ModScript
                 }
                 return call(res.Succes(PNode.GetCall("CallFunc", at, args)));
             }
-            else if(current.type == TokenType.LSQBR)
+            else if (current.type == TokenType.LSQBR)
             {
                 res.Register(Next());
                 if (current.type == TokenType.RSQBR)
@@ -209,7 +209,7 @@ namespace ModScript
                     return res.Failure(new InvalidSyntaxError(current.position, "Expected ']'"));
                 res.Register(Next());
                 res.isInnnerCall = true;
-                return call(res.Succes(PNode.GetCall("GetInner", at, new List<PNode>() {n}), true));
+                return call(res.Succes(PNode.GetCall("GetInner", at, new List<PNode>() { n }), true));
             }
             return res.Succes(at, true);
         }
@@ -231,7 +231,7 @@ namespace ModScript
                     return res;
                 left = PNode.GetBinOP(left, opT, r);
             }
-            if(b)
+            if (b)
                 return res.Succes(left, true);
             return res.Succes(left);
         }
@@ -240,7 +240,7 @@ namespace ModScript
         {
             ParseResult res = new ParseResult();
             LToken t = current;
-            if((t.type & (TokenType.ADD | TokenType.SUB)) != 0)
+            if ((t.type & (TokenType.ADD | TokenType.SUB)) != 0)
             {
                 res.Register(Next());
                 PNode f = res.Register(factor());
@@ -268,11 +268,11 @@ namespace ModScript
                 return res.Succes(new PNode("UnarOp", t, f));
             }
             return BinOP(aryth_expr,
-                TokenType.EE  |
-                TokenType.NE  | 
-                TokenType.GT  |
+                TokenType.EE |
+                TokenType.NE |
+                TokenType.GT |
                 TokenType.GTE |
-                TokenType.LT  |
+                TokenType.LT |
                 TokenType.LTE);
         }
 
@@ -292,12 +292,12 @@ namespace ModScript
 
                 res.Register(Next());
                 PNode exp = res.Register(expr());
-                if (res.error != null) 
+                if (res.error != null)
                     return res;
 
                 return res.Succes(new PNode("VarMake", Vname, exp));
             }
-            if(current.type == TokenType.IDENTIFIER)
+            if (current.type == TokenType.IDENTIFIER)
             {
                 LToken Vname = current;
                 res.Register(Next());
@@ -338,6 +338,138 @@ namespace ModScript
             return res.Succes(node);
         }
 
+        public ParseResult body_statement()
+        {
+            ParseResult res = new ParseResult();
+            if (current.type == TokenType.LBRACK)
+            {
+                Next();
+                PNode stm = res.Register(Statements());
+                if (res.error != null)
+                    return res;
+                if (current.type != TokenType.RBRACK)
+                    return res.Failure(new InvalidSyntaxError(current.position, "Expected '}'"));
+                return res.Succes(stm);
+            }
+            PNode st = res.Register(statement());
+            if (res.error != null)
+                return res;
+            if (st.TYPE != "IF" && st.TYPE != "WHILE")
+            {
+                if (current.type != TokenType.NLINE)
+                    return res.Failure(new InvalidSyntaxError(current.position, "Expected ';'"));
+                Next();
+            }
+            return res.Succes(st);
+        }
+        public ParseResult if_expr()
+        {
+            ParseResult res = new ParseResult();
+            LToken str = current;
+            Next();
+            if (current.type != TokenType.LPAR)
+                return res.Failure(new InvalidSyntaxError(current.position, "Expected '('"));
+            Next();
+            PNode test = res.Register(expr());
+            if (res.error != null)
+                return res;
+            if (current.type != TokenType.RPAR)
+                return res.Failure(new InvalidSyntaxError(current.position, "Expected ')'"));
+            Next();
+            bool bracketed = current.type == TokenType.LBRACK;
+            PNode body = res.Register(body_statement());
+            if (res.error != null)
+                return res;
+            if (bracketed && current.type != TokenType.RBRACK)
+                return res.Failure(new InvalidSyntaxError(current.position, "Expected '}'"));
+            if (bracketed)
+                Next();
+            if (current.type == TokenType.KEYWORD && current.value.text == "else")
+            {
+                Next();
+                PNode Ebody = res.Register(body_statement());
+                if (res.error != null)
+                    return res;
+                return res.Succes(new PNode("IF", new List<PNode>() { test, body, Ebody }, str));
+            }
+            return res.Succes(new PNode("IF", new List<PNode>() { test, body }, str));
+        }
+        public ParseResult while_expr()
+        {
+            ParseResult res = new ParseResult();
+            LToken str = current;
+            Next();
+            if (current.type != TokenType.LPAR)
+                return res.Failure(new InvalidSyntaxError(current.position, "Expected '('"));
+            Next();
+            PNode test = res.Register(expr());
+            if (res.error != null)
+                return res;
+            if (current.type != TokenType.RPAR)
+                return res.Failure(new InvalidSyntaxError(current.position, "Expected ')'"));
+            Next();
+            bool bracketed = current.type == TokenType.LBRACK;
+            PNode body = res.Register(body_statement());
+            if (res.error != null)
+                return res;
+            if (bracketed && current.type != TokenType.RBRACK)
+                return res.Failure(new InvalidSyntaxError(current.position, "Expected '}'"));
+            Next();
+            return res.Succes(new PNode("WHILE", new List<PNode>() { test, body }, str));
+        }
+
+
+        public ParseResult statement()
+        {
+            ParseResult res = new ParseResult();
+            if (current.type == TokenType.KEYWORD && current.value.text == "while")
+            {
+                PNode n = res.Register(while_expr());
+                if (res.error != null)
+                    return res;
+                return res.Succes(n);
+            }
+            if (current.type == TokenType.KEYWORD && current.value.text == "if")
+            {
+                PNode n = res.Register(if_expr());
+                if (res.error != null)
+                    return res;
+                return res.Succes(n);
+            }
+            PNode exp = res.Register(expr());
+            if (res.error != null)
+                return res;
+            return res.Succes(exp);
+        }
+
+
+        public ParseResult Statements()
+        {
+            ParseResult res = new ParseResult();
+            List<PNode> PNodes = new List<PNode>();
+            LToken str = current;
+            while (true)
+            {
+                int b = index;
+                PNode exp = res.TryRegister(statement());
+                if(exp == null)
+                {
+                    Back(index - b);
+                    break;
+                }
+                if (exp.TYPE != "IF" && exp.TYPE != "WHILE")
+                {
+                    if (current.type != TokenType.NLINE)
+                        return res.Failure(new InvalidSyntaxError(current.position, "Expected ';'"));
+                    Next();
+                }
+                PNodes.Add(exp);
+            }
+            return res.Succes(new PNode("Body", PNodes, str));
+        }
+
+
+
         delegate ParseResult PRes();
         ParseResult BinOP(PRes func, TokenType type, PRes rop = null)
         {
@@ -370,6 +502,7 @@ namespace ModScript
         public PNode node;
         public Error error;
         int advanceC = 0;
+        public int toRevert = 0;
         public bool isInnnerCall = false;
 
         public PNode Register(ParseResult res)
@@ -379,6 +512,16 @@ namespace ModScript
             if (res.error != null)
                 error = res.error;
             return res.node;
+        }
+
+        public PNode TryRegister(ParseResult res)
+        {
+            if(res.error != null)
+            {
+                toRevert = advanceC;
+                return null;
+            }
+            return Register(res);
         }
 
         public PNode Register(PNode node)

@@ -1,7 +1,16 @@
-﻿body-statement	: LBRACK (expr NLINE)* RBRACK							---
-				: ARROW expr											---
+﻿statements		: (statement NLINE)*
 
 statement		:
+				: while-expr
+				: if-expr
+				: expr
+
+if-expr			: KEYWORD:IF LPAR expr RPAR body-statement
+				  (KEYWORD:ELSE body-statement)?
+
+while-expr		: KEYWORD:WHILE LPAR expr RPAR body-statement
+
+body-statement	: ((LBRACK statements RBRACK)|(statement NLINE))
 
 expr			: KEYWORD:let INDETIFIER EQUAL expr
 				: INDETIFIER (ADD|SUB|MULT|DIV|POW|MOD)?-EQUAL expr

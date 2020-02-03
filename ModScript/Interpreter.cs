@@ -15,7 +15,7 @@ namespace ModScript
             switch (node.TYPE)
             {
                 case "VALUE":
-                    return res.Succes(node.val);
+                    return res.Succes(node.val.SetContext(context));
                 case "VarAsign":
                 case "VarMake":
                     Ot = res.Register(VisitVarAsign(node, context));
@@ -39,8 +39,8 @@ namespace ModScript
                 case "FuncDef":
                     f = new Function(node.val, node.right, node.LTokens.ConvertAll(x => x.value.text));
                     if (node.val.value != null)
-                        context.varlist[node.val.value.text] = new LToken(TokenType.VALUE, new Value(f)).SetContext(context);
-                    return res.Succes(new LToken(TokenType.VALUE, new Value(f)).SetContext(context));
+                        context.varlist[node.val.value.text] = new LToken(TokenType.VALUE, new Value(f), node.val.position).SetContext(context);
+                    return res.Succes(new LToken(TokenType.VALUE, new Value(f), node.val.position).SetContext(context));
                 case "CallFunc":
                     Ot = res.Register(VisitCall(node, context));
                     if (res.error != null)
@@ -54,7 +54,7 @@ namespace ModScript
                         if (res.error != null)
                             return res;
                     }
-                    return res.Succes(new LToken(TokenType.VALUE, new Value(values), node.val.position));
+                    return res.Succes(new LToken(TokenType.VALUE, new Value(values), node.val.position).SetContext(context));
                 case "GetInner":
                     Ot = res.Register(VisitGetInner(node, context));
                     if (res.error != null)
@@ -65,6 +65,45 @@ namespace ModScript
                     if (res.error != null)
                         return res;
                     return res.Succes(Ot);
+                case "IF":
+                    Ot = res.Register(Visit(node.PNodes[0], context));
+                    if (res.error != null)
+                        return res;
+                    if (Ot.value.boolean)
+                    {
+                        res.Register(Visit(node.PNodes[1], context));
+                        if (res.error != null)
+                            return res;
+                    }
+                    else if (node.PNodes.Count == 3)
+                    {
+                        res.Register(Visit(node.PNodes[2], context));
+                        if (res.error != null)
+                            return res;
+                    }
+                    return res.Succes(new LToken(TokenType.VALUE, Value.NULL, node.val.position));
+                case "WHILE":
+                    Ot = res.Register(Visit(node.PNodes[0], context));
+                    if (res.error != null)
+                        return res;
+                    while(Ot.value.boolean)
+                    {
+                        res.Register(Visit(node.PNodes[1], context));
+                        if (res.error != null)
+                            return res;
+                        Ot = res.Register(Visit(node.PNodes[0], context));
+                        if (res.error != null)
+                            return res;
+                    }
+                    return res.Succes(new LToken(TokenType.VALUE, Value.NULL, node.val.position));
+                case "Body":
+                    foreach (PNode n in node.PNodes)
+                    {
+                        res.Register(Visit(n, context));
+                        if (res.error != null)
+                            return res;
+                    }
+                    return res.Succes(new LToken(TokenType.VALUE, Value.NULL, node.val.position));
                 default:
                     throw new Exception("Visit not defined");
             }
@@ -121,7 +160,7 @@ namespace ModScript
             if (res.error != null)
                 return res;
             if (toCall.value.function == null)
-                return res.Failure(new RuntimeError(node.PNodes[0].val.position, $"{node.PNodes[0].val.value.text} is not a function."));
+                return res.Failure(new RuntimeError(node.PNodes[0].val.position, $"{node.PNodes[0].val.value.text} is not a function.", context));
             List<LToken> args = new List<LToken>();
             for (int n = 1; n < node.PNodes.Count; n++)
             {
@@ -129,15 +168,17 @@ namespace ModScript
                 if (res.error != null)
                     return res;
             }
-            LToken t = res.Register(toCall.value.function.Execute(args, toCall.position));
+            LToken t = res.Register(toCall.value.function.Execute(args, context, toCall.position));
             if (res.error != null)
                 return res;
-            return res.Succes(t);
+            return res.Succes(t.SetContext(context));  
         }
 
         static RTResult VisitVarAsign(PNode node, Context context)
         {
             RTResult res = new RTResult();
+            if (Compiler.forbidden.Contains(node.val.value.text))
+                return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is a predefined, unmutable variable", context));
             if (node.TYPE == "VarAsign")
             {
                 if (!context.varlist.ContainsKey(node.val.value.text))
@@ -151,7 +192,7 @@ namespace ModScript
                 return res;
             LToken Val = new LToken(TokenType.VALUE, n.value, node.val.position).SetContext(n.value.context);
             context.varlist[node.val.value.text] = Val;
-            return res.Succes(Val);
+            return res.Succes(Val.SetContext(context));   
         }
 
         static RTResult VisitBinOp(PNode node, Context context)
@@ -183,7 +224,7 @@ namespace ModScript
                         return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number * r.value.number), l.position).SetContext(l.value.context));
                     case TokenType.DIV:
                         if (r.value.number == 0)
-                            res.Failure(new RuntimeError(node.val.position, "Division by zero error"));
+                            res.Failure(new RuntimeError(node.val.position, "Division by zero error", context));
 
                         return res.Succes(new LToken(TokenType.VALUE, new Value(l.value.number / r.value.number), l.position).SetContext(l.value.context));
                     case TokenType.POW:
@@ -236,10 +277,10 @@ namespace ModScript
 
             if (node.val.type == TokenType.SUB)
                 if (n.value.isNumber)
-                    return res.Succes(new LToken(TokenType.VALUE, new Value(-n.value.number)).SetContext(n.value.context));
+                    return res.Succes(new LToken(TokenType.VALUE, new Value(-n.value.number), n.position).SetContext(n.value.context));
             if (node.val.type == TokenType.NOT)
                 if (n.value.type == "BOOLEAN")
-                    return res.Succes(new LToken(TokenType.VALUE, new Value(!n.value.boolean)).SetContext(n.value.context));
+                    return res.Succes(new LToken(TokenType.VALUE, new Value(!n.value.boolean), n.position).SetContext(n.value.context));
                 else
                     return res.Failure(new RuntimeError(n.position, "Expected boolean", context));
             return res.Succes(n);
@@ -289,10 +330,11 @@ namespace ModScript
         {
             Context c;
             if (parent != null)
-                c = new Context(name, parent.Copy(), parentEntry.Copy());
+                c = new Context(name, parent, parentEntry);
             else
                 c = new Context(name);
-            c.varlist = varlist.Copy();
+            if (varlist != null)
+                c.varlist = varlist.Copy();
             return c;
         }
     }

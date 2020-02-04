@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
+﻿
 namespace ModScript
 {
     enum TokenType //: long
@@ -26,7 +24,7 @@ namespace ModScript
         RBRACK = (1 << 21),
         LBRACK = (1 << 22),
         LSQBR = (1 << 24),
-        RSQBR = (1 << 25), //25
+        RSQBR = (1 << 25),
 
         VALUE = (1 << 6),
 
@@ -34,6 +32,7 @@ namespace ModScript
         IDENTIFIER = (1 << 11),
 
         COMMA = (1 << 23),  
+        DOT = (1 << 27), //27
         NLINE = (1 << 12),
         EOF = (1 << 7),
 

@@ -40,15 +40,18 @@ Boolean operators:
 
 String operators:
 	+ : concatination
+	STRING.length : length of the STRING as int
+	STRING[index] : index'th char in the STRING
 
 List operators:
 	+ : concatination
+	LIST.length : length of the LIST as int
 	LIST[index] : data in LIST at index
 
 Function definition:
 	function IDENTIFIER(arg1Name, arg2Name ...)
 		{ code of definition } | => line of result;
-	IDENTIFIER = function(arg1Name, arg2Name ...)			as anonymous primitive
+	function(arg1Name, arg2Name ...)			as anonymous primitive
 		{ code of definition } | => line of result;
 
 If statement:

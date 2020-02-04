@@ -62,6 +62,9 @@ namespace ModScript
                     case ',':
                         tokens.Add(new LToken(TokenType.COMMA, pos));
                         break;
+                    case '.':
+                        tokens.Add(new LToken(TokenType.DOT, pos));
+                        break;
                     case '(':
                         tokens.Add(new LToken(TokenType.LPAR, pos));
                         break;

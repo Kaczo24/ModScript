@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace ModScript
 {
@@ -10,9 +9,9 @@ namespace ModScript
         static void Main(string[] args)
         {
             Compiler.Prepare();
-            if (args.Length == 1)
+            //if (args.Length == 1)
             {
-                Compiler.Run(File.ReadAllText(args[0]));
+                Compiler.Run(File.ReadAllText("Brainfuck.ms"));//args[0]));
                 Console.Read();
                 return;
             }

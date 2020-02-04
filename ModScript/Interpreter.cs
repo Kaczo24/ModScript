@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace ModScript
 {
     static class Interpreter
     {
-
+        
         static public RTResult Visit(PNode node, Context context)
         {
             RTResult res = new RTResult();
             LToken Ot;
             Function f;
+             
             switch (node.TYPE)
             {
                 case "VALUE":
@@ -55,6 +55,13 @@ namespace ModScript
                             return res;
                     }
                     return res.Succes(new LToken(TokenType.VALUE, new Value(values), node.val.position).SetContext(context));
+                case "GetProperty":
+                    Ot = res.Register(Visit(node.right, context));
+                    if (res.error != null)
+                        return res;
+                    Value v = Ot.value.GetProperty(node.val.value.text);
+                    Ot = new LToken(TokenType.VALUE, v, Ot.position);
+                    return res.Succes(Ot.SetContext(context));
                 case "GetInner":
                     Ot = res.Register(VisitGetInner(node, context));
                     if (res.error != null)
@@ -66,36 +73,63 @@ namespace ModScript
                         return res;
                     return res.Succes(Ot);
                 case "IF":
-                    Ot = res.Register(Visit(node.PNodes[0], context));
-                    if (res.error != null)
-                        return res;
-                    if (Ot.value.boolean)
                     {
-                        res.Register(Visit(node.PNodes[1], context));
+                        Context ctx = BracketContext(context);
+                        Ot = res.Register(Visit(node.PNodes[0], ctx));
                         if (res.error != null)
                             return res;
-                    }
-                    else if (node.PNodes.Count == 3)
-                    {
-                        res.Register(Visit(node.PNodes[2], context));
-                        if (res.error != null)
-                            return res;
+                        if (Ot.value.boolean)
+                        {
+                            res.Register(Visit(node.PNodes[1], ctx));
+                            if (res.error != null)
+                                return res;
+                        }
+                        else if (node.PNodes.Count == 3)
+                        {
+                            res.Register(Visit(node.PNodes[2], ctx));
+                            if (res.error != null)
+                                return res;
+                        }
                     }
                     return res.Succes(new LToken(TokenType.VALUE, Value.NULL, node.val.position));
                 case "WHILE":
-                    Ot = res.Register(Visit(node.PNodes[0], context));
-                    if (res.error != null)
-                        return res;
-                    while(Ot.value.boolean)
                     {
-                        res.Register(Visit(node.PNodes[1], context));
+                        Context ctx = BracketContext(context);
+                        Ot = res.Register(Visit(node.PNodes[0], ctx));
                         if (res.error != null)
                             return res;
-                        Ot = res.Register(Visit(node.PNodes[0], context));
-                        if (res.error != null)
-                            return res;
+                        while (Ot.value.boolean)
+                        {
+                            res.Register(Visit(node.PNodes[1], ctx));
+                            if (res.error != null)
+                                return res;
+                            Ot = res.Register(Visit(node.PNodes[0], ctx));
+                            if (res.error != null)
+                                return res;
+                        }
                     }
                     return res.Succes(new LToken(TokenType.VALUE, Value.NULL, node.val.position));
+                case "FOR":
+                    {
+                        Context ctx = BracketContext(context);
+                        res.Register(Visit(node.PNodes[0], ctx));
+                        Ot = res.Register(Visit(node.PNodes[1], ctx));
+                        if (res.error != null)
+                            return res;
+                        while (Ot.value.boolean)
+                        {
+                            res.Register(Visit(node.PNodes[3], ctx));
+                            if (res.error != null)
+                                return res;
+                            res.Register(Visit(node.PNodes[2], ctx));
+                            if (res.error != null)
+                                return res;
+                            Ot = res.Register(Visit(node.PNodes[1], ctx));
+                            if (res.error != null)
+                                return res;
+                        }
+                        return res.Succes(new LToken(TokenType.VALUE, Value.NULL, node.val.position));
+                    }
                 case "Body":
                     foreach (PNode n in node.PNodes)
                     {
@@ -125,6 +159,9 @@ namespace ModScript
                 LToken exp = res.Register(Visit(node.PNodes[2], context));
                 if (res.error != null)
                     return res;
+                if(v.value.integer < 0 || v.value.integer >= toCall.value.values.Count)
+                    return res.Failure(new RuntimeError(v.position, $"Element argument has to be between 0 and the length of the list ({toCall.value.values.Count}).", context));
+
                 toCall.value.values[v.value.integer] = exp.value;
                 return res.Succes(exp.SetContext(context));
             }
@@ -148,6 +185,19 @@ namespace ModScript
                     return res.Failure(new RuntimeError(v.position, "Element argument cannot be less then 0.", context));
                 if (v.value.integer < toCall.value.values.Count && v.value.integer >= 0)
                     return res.Succes(new LToken(TokenType.VALUE, toCall.value.values[v.value.integer], toCall.position).SetContext(context));
+                return res.Succes(new LToken(TokenType.VALUE, Value.NULL, toCall.position).SetContext(context));
+            }
+            else if(toCall.value.type == "STRING")
+            {
+                LToken v = res.Register(Visit(node.PNodes[1], context));
+                if (res.error != null)
+                    return res;
+                if (v.value.type != "INT")
+                    return res.Failure(new RuntimeError(v.position, "Element argument has to be an integer.", context));
+                if (v.value.integer < 0)
+                    return res.Failure(new RuntimeError(v.position, "Element argument cannot be less then 0.", context));
+                if (v.value.integer < toCall.value.text.Length && v.value.integer >= 0)
+                    return res.Succes(new LToken(TokenType.VALUE, new Value(toCall.value.text[v.value.integer].ToString()), toCall.position).SetContext(context));
                 return res.Succes(new LToken(TokenType.VALUE, Value.NULL, toCall.position).SetContext(context));
             }
             return res.Failure(new RuntimeError(toCall.position, "List expected", context));
@@ -285,6 +335,13 @@ namespace ModScript
                     return res.Failure(new RuntimeError(n.position, "Expected boolean", context));
             return res.Succes(n);
         }
+
+        static Context BracketContext(Context context)
+        {
+            Context ctx = context.Copy();
+            ctx.varlist = new VarList(context.varlist);
+            return ctx;
+        }
     }
 
     class RTResult
@@ -368,7 +425,15 @@ namespace ModScript
             }
             set
             {
-                base[s] = value;
+                if (parent != null)
+                {
+                    if (parent.ContainsKey(s))
+                        parent[s] = value;
+                    else
+                        base[s] = value;
+                }
+                else
+                    base[s] = value;
             }
         }
 

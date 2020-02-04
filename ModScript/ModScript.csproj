@@ -46,6 +46,7 @@
     <Compile Include="Compiler.cs" />
     <Compile Include="Error.cs" />
     <Compile Include="Function.cs" />
+    <Compile Include="InnerValue.cs" />
     <Compile Include="Interpreter.cs" />
     <Compile Include="Lexer.cs" />
     <Compile Include="LToken.cs" />
@@ -59,6 +60,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Doc.txt" />
     <Content Include="Grammar.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

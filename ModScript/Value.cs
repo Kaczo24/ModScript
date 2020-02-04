@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace ModScript
 { 
@@ -15,6 +11,9 @@ namespace ModScript
         public List<Value> values;
         public Function function;
         public Context context;
+        public int integer;
+        public bool boolean = false;
+
 
         public static Value NULL = new Value();
         public double number
@@ -40,8 +39,6 @@ namespace ModScript
                 }
             }
         }
-        public int integer;
-        public bool boolean = false;
         public Value()
         {
             type = "NULL";
@@ -101,6 +98,18 @@ namespace ModScript
             return this;
         }
 
+
+        public Value GetProperty(string prop)
+        {
+            switch (prop)
+            {
+                case "length":
+                    return InnerValue.length(this);
+                default:
+                    return null;
+            }
+        }
+
         public Value Copy()
         {
             Value v = new Value();
@@ -141,8 +150,6 @@ namespace ModScript
                     return "null";
             }
         }
-
-
         public static bool operator ==(Value a, Value b)
         {
             if (a is null && b is null)

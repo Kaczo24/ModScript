@@ -1,5 +1,4 @@
 ﻿
-
 namespace ModScript
 {
     class Error

@@ -58,7 +58,11 @@ namespace ModScript
         {
             Function f = new Function(name, body, argNames, DeffCon);
             f.parent = parent;
-            f.InnerValues.parent = InnerValues.parent;
+            f.InnerValues = InnerValues.Copy();
+            if (InnerValues.parent != null)
+                foreach (LToken t in f.InnerValues.parent.Values)
+                    if (t.value.type == "FUNC")
+                        t.value.function.InnerValues.parent = f.InnerValues;
             return f;
         }
 

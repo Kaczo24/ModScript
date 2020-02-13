@@ -73,13 +73,17 @@ namespace ModScript
                         return res;
                     if (Ot.value.type != "FUNC")
                         return res.Failure(new RuntimeError(Ot.position, "Value to prototype into has to be a function.", context));
-                    f = Ot.value.function;
-                    Ot = res.Register(Visit(node.PNodes[1], context));
-                    if (res.error != null)
-                        return res; 
-                    if (Ot.value.type == "FUNC")
-                        Ot.value.function.InnerValues.parent = f.InnerValues;
-                    f.InnerValues.Add(node.val.value.text, Ot);
+                    {
+                        LToken Tok = res.Register(Visit(node.PNodes[1], context));
+                        if (res.error != null)
+                            return res;
+                        if (Tok.value.type == "FUNC")
+                            Tok.value.function.InnerValues.parent = Ot.value.function.InnerValues;
+                        if (Ot.value.function.InnerValues.parent == null)
+                            Ot.value.function.InnerValues.parent = new VarList(null);
+                        Ot.value.function.InnerValues.parent.Add(node.val.value.text, Tok);
+                    }
+                    return res.Succes(Ot);
                 case "GetProperty":
                     Ot = res.Register(Visit(node.right, context));
                     if (res.error != null)
@@ -221,7 +225,7 @@ namespace ModScript
             RTResult res = new RTResult();
             LToken Ot;
             List<PNode> PNodes = new List<PNode>(node.PNodes);
-            foreach (PNode n in PNodes.FindAll(x => x.TYPE == "FuncDef" || x.isMakeValid()))
+            foreach (PNode n in PNodes.FindAll(x => x.TYPE == "FuncDef" || x.TYPE == "Prototype" || x.isMakeValid()))
             {
                 Ot = res.Register(Visit(n, context));
                 if (res.error != null)
@@ -332,7 +336,12 @@ namespace ModScript
                     return res.Failure(new RuntimeError(node.val.position, "Public variables have to be declared in an object.", context));
             if (node.TYPE == "VarAsign")
             {
-                if (!context.varlist.ContainsKey(node.val.value.text))
+                if (context.GetFunction() == null)
+                {
+                    if (!context.varlist.ContainsKey(node.val.value.text))
+                        return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is not Defined", context));
+                }
+                else if (!context.varlist.ContainsKey(node.val.value.text) && !context.GetFunction().InnerValues.ContainsKey(node.val.value.text))
                     return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is not Defined", context));
             }
             else if (context.varlist.ContainsKey(node.val.value.text))
@@ -348,6 +357,13 @@ namespace ModScript
                 if (Val.value.type == "FUNC")
                     Val.value.function.InnerValues.parent = f.InnerValues;
                 f.InnerValues[node.val.value.text] = Val;
+            }
+            else if (context.GetFunction() != null)
+            {
+                if (context.GetFunction().InnerValues.ContainsKey(node.val.value.text))
+                    context.GetFunction().InnerValues[node.val.value.text] = Val;
+                else
+                    context.varlist[node.val.value.text] = Val;
             }
             else
                 context.varlist[node.val.value.text] = Val;

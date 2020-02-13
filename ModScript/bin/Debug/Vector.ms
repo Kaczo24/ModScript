@@ -1,7 +1,7 @@
 
 let v = Vector(InputN(), InputN());
 Printl(v.mag());
-v.x = InputN();
+v.mult(InputN());
 Printl(v.mag());
 
 function Vector(X, Y)
@@ -13,8 +13,6 @@ function Vector(X, Y)
 
 	return this;
 }
-
-Vector << z = 9;
 
 Vector << mult = function(M) {
 	x *= M;

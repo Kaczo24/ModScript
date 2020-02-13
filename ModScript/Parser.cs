@@ -462,7 +462,7 @@ namespace ModScript
                 if (current.type != TokenType.IDENTIFIER)
                     return res.Failure(new InvalidSyntaxError(current.position, "Expected an identifier"));
                 LToken Pname = current;
-                PNode exp = new PNode(new LToken(TokenType.VALUE, Value.NULL, current.position)); ;
+                PNode exp = new PNode(new LToken(TokenType.VALUE, Value.NULL, current.position));
                 res.Register(Next());
                 if (current.type == TokenType.EQUAL)
                 {
@@ -698,7 +698,7 @@ namespace ModScript
                         return res.Failure(new InvalidSyntaxError(current.position, "Expected ';'"));
                     Next();
                 }
-                if (current.type == TokenType.RBRACK && exp.TYPE == "FuncDef")
+                if (current.type == TokenType.RBRACK && (exp.TYPE == "FuncDef" || exp.TYPE == "Prototype"))
                     Next();
                 PNodes.Add(exp);
             }

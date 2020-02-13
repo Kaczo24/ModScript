@@ -24,7 +24,6 @@ expr			: KEYWORD:let INDETIFIER (EQUAL expr)?
 				: INDETIFIER (ADD|SUB|MULT|DIV|POW|MOD)?-EQUAL expr
 				: INDETIFIER MOVL INDETIFIER (EQUAL expr)?
 				: call LSQBR NUMBER RSQBR (ADD|SUB|MULT|DIV|POW|MOD)?-EQUAL expr
-				: LBRACK statements RBRACK
 				: comp-expr ((AND|OR) comp-expr)*
 
 
@@ -57,6 +56,7 @@ call			: call LSQBR NUMBER RSQBR
 atom			: VALUE|INDETIFIER
 				: list-expr
 				: LPAR expr RPAR
+				: LBRACK statements RBRACK
 				: func-def
 
 

@@ -53,6 +53,7 @@ Function definition:
 		{ code of definition } | => line of result;
 	function(arg1Name, arg2Name ...)			as anonymous primitive
 		{ code of definition } | => line of result;
+	{ code of definition }						as a returned exprestion
 
 If statement:
 	if (boolean)
@@ -62,6 +63,9 @@ While statement:
 	while (boolean)
 		{ code to execute } | line to execute;
 
+For statement:
+	for (statement done once; boolean; statement done after cycle)
+		{ code to execute } | line to execute;
 
 Predefined Functions:
 	Print(arg0) : prints arg0 to console

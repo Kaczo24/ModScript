@@ -11,7 +11,9 @@ namespace ModScript
         Value parent;
         PNode body;
         List<string> argNames;
-        public Function(LToken _name, PNode node, List<string> args)
+        Context DeffCon;
+        public VarList InnerValues = new VarList(null);
+        public Function(LToken _name, PNode node, List<string> args, Context _context)
         {
             if (_name.value == null)
                 name = new LToken(TokenType.VALUE, new Value("<anonymous>"), _name.position);
@@ -19,6 +21,7 @@ namespace ModScript
                 name = _name;
             body = node;
             argNames = args;
+            DeffCon = _context;
         }
 
         public Function SetParent(Value v)
@@ -34,12 +37,13 @@ namespace ModScript
             ctx.name = name.value.text;
             ctx.parentEntry = pos;
             ctx.parent = _context;
-            ctx.varlist.parent = _context.varlist;
-            ctx.varlist["this"] = new LToken(TokenType.VALUE, parent, pos);
+            ctx.lastIn = this;
+            ctx.varlist.parent = DeffCon.varlist;
+            ctx.varlist["this"] = new LToken(TokenType.VALUE, new Value(this).SetContext(parent.context), pos);
             if (args.Count != argNames.Count)
                 return res.Failure(new RuntimeError(pos, $"This function reqires {argNames.Count} arguments, insted of {args.Count}.", parent.context));
             for (int n = 0; n < args.Count; n++)
-                ctx.varlist[argNames[n]] = args[n].SetContext(ctx);
+                ctx.varlist.Add(argNames[n], args[n].SetContext(ctx));
             LToken t;
             if (Predefs.ContainsKey(name.value.text))
                 t = res.Register(Predefs[name.value.text].Item1(ctx));
@@ -52,7 +56,10 @@ namespace ModScript
 
         public Function Copy()
         {
-            return new Function(name, body, argNames);
+            Function f = new Function(name, body, argNames, DeffCon);
+            f.parent = parent;
+            f.InnerValues.parent = InnerValues.parent;
+            return f;
         }
 
         public override string ToString()

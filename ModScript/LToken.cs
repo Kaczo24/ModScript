@@ -1,7 +1,7 @@
 ﻿
 namespace ModScript
 {
-    enum TokenType //: long
+    enum TokenType : long
     {
         ADD = (1 << 0),
         ADDW = ADD | EQUAL,
@@ -16,7 +16,11 @@ namespace ModScript
         MOD = (1 << 26),
         MODW = MOD | EQUAL,
 
+        INC = (1L << 31),
+        DEC = (1L << 32),
+
         EQUAL = (1 << 9),
+        MOVL = (1L << 33), // 33
 
         ARROW = (1 << 20),
         RPAR = (1 << 4),
@@ -31,8 +35,12 @@ namespace ModScript
         KEYWORD = (1 << 10),
         IDENTIFIER = (1 << 11),
 
+        RETURN = (1 << 28),
+        BREAK = (1 << 29),
+        CONTINUE = (1 << 30),
+
         COMMA = (1 << 23),  
-        DOT = (1 << 27), //27
+        DOT = (1 << 27),
         NLINE = (1 << 12),
         EOF = (1 << 7),
 
@@ -90,6 +98,10 @@ namespace ModScript
 
         public LToken Copy()
         {
+            if (position == null)
+                return new LToken(type, value.Copy(), null);
+            if (value == null)
+                return new LToken(type, null, position.Copy());
             return new LToken(type, value.Copy(), position.Copy());
         }
 

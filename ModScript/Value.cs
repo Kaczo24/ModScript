@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-
+using System;
 namespace ModScript
 { 
-    class Value
+    class Value : IEquatable<Value>
     {
         public static double GetNumber(string s) => double.Parse(s.Replace('.', ','));
         public string text, type;
@@ -106,7 +106,40 @@ namespace ModScript
                 case "length":
                     return InnerValue.length(this);
                 default:
-                    return null;
+                    if (type == "FUNC")
+                        if (function.InnerValues.ContainsKey(prop))
+                            return function.InnerValues[prop].value;
+                    return NULL;
+            }
+        }
+
+        public Value SetProperty(string prop, LToken val)
+        {
+            switch (prop)
+            {
+                default:
+                    if (type == "FUNC")
+                    {
+                        if (function.InnerValues.ContainsKey(prop))
+                        if (val.value.type == "FUNC")
+                            val.value.function.InnerValues.parent = function.InnerValues;
+                        return (function.InnerValues[prop] = val).value;
+                    }
+                    return NULL;
+            }
+        }
+
+        public RTResult CallProperty(string prop, List<LToken> args, Context _context, TextPosition pos)
+        {
+            switch (prop)
+            {
+                case "Contains":
+                    return InnerValue.Contains(this, args, _context, pos);
+                default:
+                    if (type == "FUNC")
+                        if (function.InnerValues.ContainsKey(prop))
+                            return function.InnerValues[prop].value.function.Copy().Execute(args, _context, pos);
+                    return new RTResult().Failure(new RuntimeError(pos, prop + " in " + type + " is not a function.", _context));
             }
         }
 
@@ -150,6 +183,12 @@ namespace ModScript
                     return "null";
             }
         }
+
+        public bool Equals(Value other)
+        {
+            return this == other;
+        }
+
         public static bool operator ==(Value a, Value b)
         {
             if (a is null && b is null)

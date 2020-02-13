@@ -1,6 +1,9 @@
 ﻿statements		: (statement NLINE)*
 
-statement		:
+statement		: KEYWORD:return expr?
+				: KEYWORD:break
+				: KEYWORD:continue
+				: KEYWORD:run expr(type STRING)
 				: while-expr
 				: if-expr
 				: for-expr
@@ -15,9 +18,13 @@ for-expr		: KEYWORD:FOR LPAR expr ENDL expr ENDL expr RPAR body-statement
 
 body-statement	: ((LBRACK statements RBRACK)|(statement NLINE))
 
-expr			: KEYWORD:let INDETIFIER EQUAL expr
+expr			: KEYWORD:let INDETIFIER (EQUAL expr)?
+				: KEYWORD:public KEYWORD:let INDETIFIER (EQUAL expr)?
+				: KEYWORD:public func-def
 				: INDETIFIER (ADD|SUB|MULT|DIV|POW|MOD)?-EQUAL expr
+				: INDETIFIER MOVL INDETIFIER (EQUAL expr)?
 				: call LSQBR NUMBER RSQBR (ADD|SUB|MULT|DIV|POW|MOD)?-EQUAL expr
+				: LBRACK statements RBRACK
 				: comp-expr ((AND|OR) comp-expr)*
 
 
@@ -35,8 +42,11 @@ factor			: (ADD|SUB) factor
 				: power
 
 
-power			: call (POW factor)*
+power			: mono-mod (POW factor)*
 
+mono-mod		: (INC|DEC) call
+				: call (INC|DEC)?
+				
 
 call			: call LSQBR NUMBER RSQBR
 				: call LPAR (expr (COMMA expr)*)? RPAR

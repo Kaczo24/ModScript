@@ -58,6 +58,27 @@ namespace ModScript
             n.PNodes.Insert(0, fName);
             return n;
         }
+
+        public bool isMakeValid()
+        {
+            if (TYPE != "VarMake")
+                return false;
+            return !right.isCallic();
+        }
+
+        private bool isCallic()
+        {
+            if (TYPE == "CallFunc")
+                return true;
+            if (right != null)
+                if (right.isCallic())
+                    return true;
+            if (left != null)
+                if (left.isCallic())
+                    return true;
+            return false;
+        }
+
         public override string ToString()
         {
             if (TYPE == "BinOp")

@@ -148,24 +148,36 @@ namespace ModScript
                     return res.Failure(new InvalidSyntaxError(current.position, "Expected ')'"));
 
             }
-            else if (t.type == TokenType.LSQBR)
+            if (current.type == TokenType.LBRACK)
+            {
+                Next();
+                PNode stm = res.Register(Statements());
+                if (res.error != null)
+                    return res;
+                if (current.type != TokenType.RBRACK)
+                    return res.Failure(new InvalidSyntaxError(current.position, "Expected '}'"));
+                Next();
+                stm.TYPE = "MultExpr";
+                return res.Succes(stm);
+            }
+            if (t.type == TokenType.LSQBR)
             {
                 PNode n = res.Register(list_expr());
                 if (res.error != null)
                     return res;
                 return res.Succes(n);
             }
-            else if (t.type == TokenType.IDENTIFIER)
+            if (t.type == TokenType.IDENTIFIER)
             {
                 res.Register(Next());
                 return res.Succes(new PNode("VarGet", t));
             }
-            else if (t.type == TokenType.VALUE)
+            if (t.type == TokenType.VALUE)
             {
                 res.Register(Next());
                 return res.Succes(new PNode(t));
             }
-            else if (t.type == TokenType.KEYWORD && t.value.text == "function")
+            if (t.type == TokenType.KEYWORD && t.value.text == "function")
             {
                 PNode fd = res.Register(Func_Def());
                 if (res.error != null)
@@ -225,15 +237,99 @@ namespace ModScript
                     return res.Failure(new InvalidSyntaxError(current.position, "Expected identifier"));
                 LToken id = current;
                 res.Register(Next());
-                return res.Succes(new PNode("GetProperty", id, at));
+                if(current.type == TokenType.LPAR)
+                {
+                    res.Register(Next());
+                    List<PNode> args = new List<PNode>();
+                    if (current.type == TokenType.RPAR)
+                        res.Register(Next());
+                    else
+                    {
+                        args.Add(res.Register(expr()));
+                        if (res.error != null)
+                            return res.Failure(new InvalidSyntaxError(res.error.position, res.error.message + " or expected ')'"));
+                        while (current.type == TokenType.COMMA)
+                        {
+                            res.Register(Next());
+                            args.Add(res.Register(expr()));
+                            if (res.error != null)
+                                return res;
+                        }
+                        if (current.type != TokenType.RPAR)
+                            return res.Failure(new InvalidSyntaxError(current.position, "Expected ',' or ')'"));
+                        res.Register(Next());
+                    }
+                    PNode RET = PNode.GetCall("CallProperty", at, args);
+                    RET.val = id;
+                    return call(res.Succes(RET));
+                }
+                res.isInnnerCall = true;
+                return call(res.Succes(new PNode("GetProperty", id, at), true));
             }
             return res.Succes(at, true);
+        }
+
+        ParseResult monomod()
+        {
+            ParseResult res = new ParseResult();
+            PNode node;
+            if (current.type == TokenType.INC || current.type == TokenType.DEC)
+            {
+                LToken op = current;
+                res.Register(Next());
+                node = res.Register(call(atom()));
+                if (res.error != null)
+                    return res;
+                if (op.type == TokenType.INC)
+                    op.type = TokenType.ADD;
+                else
+                    op.type = TokenType.SUB;
+                PNode exp = PNode.GetBinOP(node, op, new PNode(new LToken(TokenType.VALUE, new Value(1), op.position)));
+
+                if (node.TYPE == "VarGet")
+                    return res.Succes(new PNode("VarAsign", node.val, exp));
+
+                if (!res.isInnnerCall)
+                    return res.Failure(new InvalidSyntaxError(op.position, "Increment and decrement operators can only edit immediate variables"));
+
+                List<PNode> pns = new List<PNode>(node.PNodes);
+                pns.RemoveAt(0);
+                pns.Add(exp);
+                return res.Succes(PNode.GetCall("InnerAsign", node.PNodes[0], pns));
+            }
+            node = res.Register(call(atom()));
+            if (current.type == TokenType.INC || current.type == TokenType.DEC)
+            {
+                LToken op = current;
+                LToken ed = current.Copy();
+                if (!res.isInnnerCall && node.TYPE != "VarGet")
+                    return res.Failure(new InvalidSyntaxError(op.position, "Increment and decrement operators can only edit immediate variables"));
+                res.Register(Next());
+
+                if (op.type == TokenType.INC)
+                    ed.type = TokenType.ADD;
+                else
+                    ed.type = TokenType.SUB;
+                PNode exp = PNode.GetBinOP(node, ed, new PNode(new LToken(TokenType.VALUE, new Value(1), op.position)));
+
+                if (node.TYPE == "VarGet")
+                    exp = new PNode("VarAsign", node.val, exp);
+                else
+                {
+                    List<PNode> pns = new List<PNode>(node.PNodes);
+                    pns.RemoveAt(0);
+                    pns.Add(exp);
+                    exp = PNode.GetCall("InnerAsign", node.PNodes[0], pns);
+                }
+                return res.Succes(new PNode("UnarOp", new List<PNode>() { node, exp }, op));
+            }
+            return res.Succes(node, true);
         }
 
         ParseResult Power()
         {
             ParseResult res = new ParseResult();
-            PNode left = res.Register(call(atom()));
+            PNode left = res.Register(monomod());
             if (res.error != null)
                 return res;
             bool b = true;
@@ -295,14 +391,33 @@ namespace ModScript
         ParseResult expr()
         {
             ParseResult res = new ParseResult();
+            bool publish = false;
+            if (current.type == TokenType.KEYWORD && current.value.text == "public")
+            {
+                res.Register(Next());
+                if (current.type == TokenType.KEYWORD && current.value.text == "function")
+                {
+                    PNode fd = res.Register(Func_Def());
+                    if (res.error != null)
+                        return res;
+                    if (fd.val.value == null)
+                        return res.Failure(new InvalidSyntaxError(fd.val.position, "Public function can not be anonymous."));
+                    fd.TYPE = "PublicFuncDeff";
+                    return res.Succes(fd);
+                }
+                if (current.type == TokenType.KEYWORD && current.value.text == "let")
+                    publish = true;
+                else
+                    return res.Failure(new InvalidSyntaxError(current.position, "Expected let or function"));
+            }
             if (current.type == TokenType.KEYWORD && current.value.text == "let")
             {
                 res.Register(Next());
                 if (current.type != TokenType.IDENTIFIER)
-                    return res.Failure(new InvalidSyntaxError(current.position, "Expected identifier"));
+                    return res.Failure(new InvalidSyntaxError(current.position, "Expected an identifier"));
 
                 LToken Vname = current;
-                PNode exp = null;
+                PNode exp = new PNode(new LToken(TokenType.VALUE, Value.NULL, current.position)); ;
                 res.Register(Next());
                 if (current.type == TokenType.EQUAL)
                 {
@@ -311,15 +426,14 @@ namespace ModScript
                     if (res.error != null)
                         return res;
                 }
-                else if (current.type == TokenType.NLINE)
-                {
-                    Back();
-                    exp = new PNode(new LToken(TokenType.VALUE, Value.NULL, current.position));
-                    Next();
-                }
-                else return res.Failure(new InvalidSyntaxError(current.position, "Expected '=' or ';'"));
+                
+                if(publish)
+                    return res.Succes(new PNode("PublicVarMake", Vname, exp));
                 return res.Succes(new PNode("VarMake", Vname, exp));
             }
+            if (publish)
+                return res.Failure(new InvalidSyntaxError(current.position, "Expected let or function."));
+            
             if (current.type == TokenType.IDENTIFIER)
             {
                 LToken Vname = current;
@@ -337,9 +451,29 @@ namespace ModScript
                 }
                 res.Register(Back());
             }
+
+
             PNode node = res.Register(BinOP(comp_expr, TokenType.AND | TokenType.OR));
             if (res.error != null)
                 return res.Failure(new InvalidSyntaxError(current.position, "Expected, let, number, identifier, plus, minus or parenthesis"));
+            if (current.type == TokenType.MOVL)
+            {
+                res.Register(Next());
+                if (current.type != TokenType.IDENTIFIER)
+                    return res.Failure(new InvalidSyntaxError(current.position, "Expected an identifier"));
+                LToken Pname = current;
+                PNode exp = new PNode(new LToken(TokenType.VALUE, Value.NULL, current.position)); ;
+                res.Register(Next());
+                if (current.type == TokenType.EQUAL)
+                {
+                    res.Register(Next());
+                    exp = res.Register(expr());
+                    if (res.error != null)
+                        return res;
+                }
+
+                return res.Succes(new PNode("Prototype", new List<PNode>() { node, exp }, Pname));
+            }
             if (res.isInnnerCall)
             {
                 if ((current.type & TokenType.EQUAL) != 0)
@@ -351,11 +485,14 @@ namespace ModScript
                         return res;
                     if ((t & (TokenType.ADD | TokenType.SUB | TokenType.MULT | TokenType.DIV | TokenType.POW)) != 0)
                         exp = PNode.GetBinOP(node, new LToken(t ^ TokenType.EQUAL), exp);
-
-                    List<PNode> pns = new List<PNode>(node.PNodes);
-                    pns.RemoveAt(0);
-                    pns.Add(exp);
-                    return res.Succes(PNode.GetCall("InnerAsign", node.PNodes[0], pns));
+                    if (node.TYPE == "GetInner")
+                    {
+                        List<PNode> pns = new List<PNode>(node.PNodes);
+                        pns.RemoveAt(0);
+                        pns.Add(exp);
+                        return res.Succes(PNode.GetCall("InnerAsign", node.PNodes[0], pns));
+                    }
+                    return res.Succes(PNode.GetCall("PropertyAsign", node, new List<PNode>() { exp }));
                 }
             }
             return res.Succes(node);
@@ -482,6 +619,37 @@ namespace ModScript
         public ParseResult statement()
         {
             ParseResult res = new ParseResult();
+            PNode exp;
+            if (current.type == TokenType.KEYWORD && current.value.text == "run")
+            {
+                LToken pos = current;
+                Next();
+                exp = res.TryRegister(expr());
+                return res.Succes(new PNode("RUN", pos, exp));
+            }
+            if (current.type == TokenType.KEYWORD && current.value.text == "return")
+            {
+                LToken pos = current;
+                Next();
+                int b = index;
+                exp = res.TryRegister(expr());
+                if (exp == null)
+                {
+                    Back(index - b);
+                    exp = new PNode(new LToken(TokenType.VALUE, Value.NULL, pos.position));
+                }
+                return res.Succes(new PNode("RETURN", pos, exp));
+            }
+            if (current.type == TokenType.KEYWORD && current.value.text == "continue")
+            {
+                Next();
+                return res.Succes(new PNode("CONTINUE", current));
+            }
+            if (current.type == TokenType.KEYWORD && current.value.text == "break")
+            {
+                Next();
+                return res.Succes(new PNode("BREAK", current));
+            }
             if (current.type == TokenType.KEYWORD && current.value.text == "while")
             {
                 PNode n = res.Register(while_expr());
@@ -503,7 +671,7 @@ namespace ModScript
                     return res;
                 return res.Succes(n);
             }
-            PNode exp = res.Register(expr());
+            exp = res.Register(expr());
             if (res.error != null)
                 return res;
             return res.Succes(exp);
@@ -524,12 +692,14 @@ namespace ModScript
                     Back(index - b);
                     break;
                 }
-                if (exp.TYPE != "IF" && exp.TYPE != "WHILE" && exp.TYPE != "FOR")
+                if (exp.TYPE != "IF" && exp.TYPE != "WHILE" && exp.TYPE != "FOR" && (current.type != TokenType.RBRACK && exp.TYPE != "FuncDef"))
                 {
                     if (current.type != TokenType.NLINE)
                         return res.Failure(new InvalidSyntaxError(current.position, "Expected ';'"));
                     Next();
                 }
+                if (current.type == TokenType.RBRACK && exp.TYPE == "FuncDef")
+                    Next();
                 PNodes.Add(exp);
             }
             return res.Succes(new PNode("Body", PNodes, str));

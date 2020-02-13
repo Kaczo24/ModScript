@@ -22,7 +22,7 @@ namespace ModScript
                 int m = Function.Predefs[k].Item2;
                 for (int n = 0; n < m; n++)
                     args.Add("_ARG" + n);
-                globalVar[k] = new LToken(TokenType.VALUE, new Value(new Function(new LToken(TokenType.VALUE, new Value(k).SetContext(root), new TextPosition(0, 0, 0, "CONST", "")), null, args)).SetContext(root), new TextPosition(0, 0, 0, "CONST", ""));
+                globalVar[k] = new LToken(TokenType.VALUE, new Value(new Function(new LToken(TokenType.VALUE, new Value(k).SetContext(root), new TextPosition(0, 0, 0, "CONST", "")), null, args, root)).SetContext(root), new TextPosition(0, 0, 0, "CONST", ""));
             }
             root.varlist = globalVar;
             foreach (string s in globalVar.Keys)

@@ -26,8 +26,13 @@ namespace ModScript
             "else",
             "while",
             "for",
-            "function"
-        };
+            "function",
+            "return",
+            "break",
+            "continue",
+            "run",
+            "public"
+    };
 
         public Lexer(string fileName, string text)
         {
@@ -120,6 +125,8 @@ namespace ModScript
                             pos.Step();
                             if (text[pos.index] == '=')
                                 tokens.Add(new LToken(TokenType.LTE, tp));
+                            else if (text[pos.index] == '<')
+                                tokens.Add(new LToken(TokenType.MOVL, tp));
                             else
                             {
                                 pos.Back();
@@ -246,8 +253,12 @@ namespace ModScript
         void Arythmia(TokenType t, string text, TextPosition pos)
         {
             pos.Step();
-            if(text[pos.index] == '=')
+            if (text[pos.index] == '=')
                 tokens.Add(new LToken(t | TokenType.EQUAL, pos));
+            else if (t == TokenType.ADD && text[pos.index] == '+')
+                tokens.Add(new LToken(TokenType.INC, pos));
+            else if (t == TokenType.SUB && text[pos.index] == '-')
+                tokens.Add(new LToken(TokenType.DEC, pos));
             else
             {
                 pos.Back();

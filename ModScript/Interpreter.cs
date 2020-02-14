@@ -73,6 +73,8 @@ namespace ModScript
                         return res;
                     if (Ot.value.type != "FUNC")
                         return res.Failure(new RuntimeError(Ot.position, "Value to prototype into has to be a function.", context));
+                    if (Compiler.forbidden.Contains(Ot.value.function.name.value.text))
+                        return res.Failure(new RuntimeError(node.val.position, $"{Ot.value.function.name.value.text} is a predefined, unmutable variable", context));
                     {
                         LToken Tok = res.Register(Visit(node.PNodes[1], context));
                         if (res.error != null)
@@ -81,7 +83,7 @@ namespace ModScript
                             Tok.value.function.InnerValues.parent = Ot.value.function.InnerValues;
                         if (Ot.value.function.InnerValues.parent == null)
                             Ot.value.function.InnerValues.parent = new VarList(null);
-                        Ot.value.function.InnerValues.parent.Add(node.val.value.text, Tok);
+                        Ot.value.function.InnerValues.parent[node.val.value.text] = Tok;
                     }
                     return res.Succes(Ot);
                 case "GetProperty":
@@ -207,13 +209,27 @@ namespace ModScript
                     return res.Succes(new LToken(TokenType.BREAK, Value.NULL, node.val.position));
                 case "CONTINUE":
                     return res.Succes(new LToken(TokenType.CONTINUE, Value.NULL, node.val.position));
+                case "SUPER":
+                    f = context.GetFunction();
+                    if (f == null)
+                        return res.Failure(new RuntimeError(node.val.position, "Super can only be called inside a function.", context));
+                    Ot = res.Register(Visit(node.right, context));
+                    if (res.error != null)
+                        return res;
+                    if (Ot.value.type != "FUNC")
+                        return res.Failure(new RuntimeError(Ot.position, "Function can only accept another function as a Super.", context));
+                    f.InnerValues.Merge(Ot.value.function.InnerValues, f);
+                    return res.Succes(new LToken(TokenType.VALUE, Value.NULL, node.val.position));
                 case "RUN":
                     Ot = res.Register(Visit(node.right, context));
                     if (res.error != null)
                         return res;
                     if (Ot.value.type != "STRING")
                         return res.Failure(new RuntimeError(node.val.position, "Run statement requires a string argument.", context));
-                    Compiler.Run(System.IO.File.ReadAllText(Ot.value.text));
+                    if (!System.IO.File.Exists(Ot.value.text))
+                        return res.Failure(new RuntimeError(Ot.position, $"File {Ot.value.text} does not exist.", context));
+                    if(!Compiler.Run(System.IO.File.ReadAllText(Ot.value.text), new System.IO.FileInfo(Ot.value.text).Name))
+                        return res.Failure(new Error());
                     return res.Succes(new LToken(TokenType.VALUE, Value.NULL, node.val.position));
                 default:
                     throw new Exception("Visit not defined");
@@ -225,7 +241,7 @@ namespace ModScript
             RTResult res = new RTResult();
             LToken Ot;
             List<PNode> PNodes = new List<PNode>(node.PNodes);
-            foreach (PNode n in PNodes.FindAll(x => x.TYPE == "FuncDef" || x.TYPE == "Prototype" || x.isMakeValid()))
+            foreach (PNode n in PNodes.FindAll(x => x.TYPE == "FuncDef" || x.TYPE == "SUPER" || x.TYPE == "RUN" || x.TYPE == "Prototype" || x.isMakeValid()))
             {
                 Ot = res.Register(Visit(n, context));
                 if (res.error != null)
@@ -351,17 +367,21 @@ namespace ModScript
             if (res.error != null)
                 return res;
             LToken Val = new LToken(TokenType.VALUE, n.value, node.val.position).SetContext(n.value.context);
+            Function f = context.GetFunction();
             if (node.TYPE == "PublicVarMake")
             {
-                Function f = context.GetFunction();
                 if (Val.value.type == "FUNC")
                     Val.value.function.InnerValues.parent = f.InnerValues;
                 f.InnerValues[node.val.value.text] = Val;
             }
-            else if (context.GetFunction() != null)
+            else if (f != null)
             {
-                if (context.GetFunction().InnerValues.ContainsKey(node.val.value.text))
-                    context.GetFunction().InnerValues[node.val.value.text] = Val;
+                if (f.InnerValues.ContainsKey(node.val.value.text))
+                {
+                    if (Val.value.type == "FUNC")
+                        Val.value.function.InnerValues.parent = f.InnerValues;
+                    f.InnerValues[node.val.value.text] = Val;
+                }
                 else
                     context.varlist[node.val.value.text] = Val;
             }
@@ -545,6 +565,28 @@ namespace ModScript
         public VarList(VarList _parent) : base()
         {
             parent = _parent;
+        }
+
+        public void Merge(VarList vl, Function f)
+        {
+            AddRange(vl, f);
+            if(vl.parent != null)
+            {
+                if (parent == null)
+                    parent = new VarList(null);
+               parent.Merge(vl.parent, f);
+            }
+        }
+
+        public void AddRange(VarList vl, Function f)
+        {
+            foreach (string k in vl.Keys)
+                if(!ContainsKey(k))
+                {
+                    if (vl[k].value.type == "FUNC")
+                        vl[k].value.function.InnerValues.parent = f.InnerValues;
+                    base[k] = vl[k];
+                }
         }
 
         public new bool ContainsKey(string s)

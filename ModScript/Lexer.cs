@@ -31,18 +31,56 @@ namespace ModScript
             "break",
             "continue",
             "run",
-            "public"
+            "public",
+            "Super"
     };
 
         public Lexer(string fileName, string text)
         {
             TextPosition pos = new TextPosition(0,0,0,fileName, text);
+            bool lCom = false, mCom = false;
             while(pos.index < text.Length)
             {
                 if(" \t\n\r".Contains(text[pos.index]))
                 {
                     pos.Step();
                     continue;
+                }
+                if(lCom)
+                {
+                    if (text[pos.index] == '\n')
+                        lCom = false;
+                    pos.Step();
+                    continue;
+                }
+                if (mCom)
+                {
+                    if (text[pos.index] == '*')
+                    {
+                        pos.Step();
+                        if (text[pos.index] == '/')
+                            mCom = false;
+                    }
+                    pos.Step();
+                    continue;
+                }
+                if (text[pos.index] == '/')
+                {
+                    pos.Step();
+                    if (text[pos.index] == '/')
+                    {
+                        lCom = true;
+                        pos.Step();
+                        continue;
+                    }
+                    else if (text[pos.index] == '*')
+                    {
+                        mCom = true;
+                        pos.Step();
+                        continue;
+                    }
+                    else
+                        pos.Back();
                 }
                 switch (text[pos.index])
                 {

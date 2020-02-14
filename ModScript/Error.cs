@@ -7,7 +7,6 @@ namespace ModScript
         public TextPosition position;
         public Context context;
         public Error() { }
-        public Error(TextPosition p) { position = p; }
         public Error(TextPosition p, string msg) { position = p; message = msg; }
         public override string ToString()
         {
@@ -34,38 +33,23 @@ namespace ModScript
 
     class CharacterNotRecognizedError : Error
     {
-        public CharacterNotRecognizedError() 
-        { type = "CharacterNotRecognized"; }
-        public CharacterNotRecognizedError(TextPosition p) : base(p)
-        { type = "CharacterNotRecognized"; }
         public CharacterNotRecognizedError(TextPosition p, string msg) : base(p, msg) 
         { type = "CharacterNotRecognized"; }
     }
     class BadFormatingError : Error
     {
-        public BadFormatingError() { type = "BadFormating"; }
-        public BadFormatingError(TextPosition p) : base(p)
-        { type = "BadFormating"; }
         public BadFormatingError(TextPosition p, string msg) : base(p, msg)
         { type = "BadFormating"; }
     }
 
     class InvalidSyntaxError : Error
     {
-        public InvalidSyntaxError() { type = "InvalidSyntax"; }
-        public InvalidSyntaxError(TextPosition p) : base(p)
-        { type = "InvalidSyntax"; }
         public InvalidSyntaxError(TextPosition p, string msg) : base(p, msg)
         { type = "InvalidSyntax"; }
     }
 
     class RuntimeError : Error
     {
-        public RuntimeError() { type = "Runtime"; }
-        public RuntimeError(TextPosition p) : base(p)
-        { type = "Runtime"; }
-        public RuntimeError(TextPosition p, string msg) : base(p, msg)
-        { type = "Runtime"; }
         public RuntimeError(TextPosition p, string msg, Context _context) : base(p, msg)
         { type = "Runtime"; context = _context; }
     }

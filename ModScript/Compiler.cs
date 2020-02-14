@@ -21,7 +21,7 @@ namespace ModScript
                 List<string> args = new List<string>();
                 int m = Function.Predefs[k].Item2;
                 for (int n = 0; n < m; n++)
-                    args.Add("_ARG" + n);
+                    args.Add(n + "ARG");
                 globalVar[k] = new LToken(TokenType.VALUE, new Value(new Function(new LToken(TokenType.VALUE, new Value(k).SetContext(root), new TextPosition(0, 0, 0, "CONST", "")), null, args, root)).SetContext(root), new TextPosition(0, 0, 0, "CONST", ""));
             }
             root.varlist = globalVar;
@@ -29,28 +29,29 @@ namespace ModScript
                 forbidden.Add(s);
         }
 
-        public static void Run(string line)
+        public static bool Run(string line, string fName)
         {
-            Lexer lexer = new Lexer(".mod", line);
+            Lexer lexer = new Lexer(fName, line);
             if (lexer.error != null)
             {
                 Console.WriteLine(lexer.error);
-                return;
+                return false;
             }
             
             Parser parser = new Parser(lexer.tokens);
             if (parser.error != null)
             {
                 Console.WriteLine(parser.error);
-                return;
+                return false;
             }
 
             RTResult res = Interpreter.Visit(parser.node, root);
             if (res.error != null)
             {
                 Console.WriteLine(res.error);
-                return;
+                return false;
             }
+            return true;
         }
     }
 }

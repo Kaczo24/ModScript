@@ -4,6 +4,7 @@ statement		: KEYWORD:return expr?
 				: KEYWORD:break
 				: KEYWORD:continue
 				: KEYWORD:run expr(type STRING)
+				: KEYWORD:Super MOVL expr(type FUNC)
 				: while-expr
 				: if-expr
 				: for-expr

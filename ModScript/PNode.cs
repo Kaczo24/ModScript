@@ -59,6 +59,17 @@ namespace ModScript
             return n;
         }
 
+        public bool isFuncDef()
+        {
+            if (TYPE == "FuncDef")
+                return true;
+            if (right == null)
+                return false;
+            if (right.isFuncDef())
+                return true;
+            return false;
+        }
+
         public bool isMakeValid()
         {
             if (TYPE != "VarMake")

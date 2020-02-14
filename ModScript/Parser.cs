@@ -19,7 +19,7 @@ namespace ModScript
             else
             {
                 if (current.type != TokenType.EOF)
-                    error = res.Failure(new InvalidSyntaxError(current.position)).error;
+                    error = res.Failure(new InvalidSyntaxError(current.position, "Expected End Of File.")).error;
                 node = res.node;
             }
         }
@@ -624,8 +624,22 @@ namespace ModScript
             {
                 LToken pos = current;
                 Next();
-                exp = res.TryRegister(expr());
+                exp = res.Register(expr());
+                if (res.error != null)
+                    return res;
                 return res.Succes(new PNode("RUN", pos, exp));
+            }
+            if(current.type == TokenType.KEYWORD && current.value.text == "Super")
+            {
+                LToken pos = current;
+                Next();
+                if (current.type != TokenType.MOVL)
+                    return res.Failure(new InvalidSyntaxError(pos.position, "Expected '<<'"));
+                Next();
+                exp = res.Register(expr());
+                if (res.error != null)
+                    return res;
+                return res.Succes(new PNode("SUPER", pos, exp));
             }
             if (current.type == TokenType.KEYWORD && current.value.text == "return")
             {
@@ -671,10 +685,7 @@ namespace ModScript
                     return res;
                 return res.Succes(n);
             }
-            exp = res.Register(expr());
-            if (res.error != null)
-                return res;
-            return res.Succes(exp);
+            return expr();
         }
 
 
@@ -692,13 +703,13 @@ namespace ModScript
                     Back(index - b);
                     break;
                 }
-                if (exp.TYPE != "IF" && exp.TYPE != "WHILE" && exp.TYPE != "FOR" && (current.type != TokenType.RBRACK && exp.TYPE != "FuncDef"))
+                if (exp.TYPE != "IF" && exp.TYPE != "WHILE" && exp.TYPE != "FOR" && !(current.type == TokenType.RBRACK && (exp.isFuncDef() || exp.TYPE == "Prototype")))
                 {
                     if (current.type != TokenType.NLINE)
                         return res.Failure(new InvalidSyntaxError(current.position, "Expected ';'"));
                     Next();
                 }
-                if (current.type == TokenType.RBRACK && (exp.TYPE == "FuncDef" || exp.TYPE == "Prototype"))
+                if (current.type == TokenType.RBRACK && (exp.isFuncDef() || exp.TYPE == "Prototype"))
                     Next();
                 PNodes.Add(exp);
             }

@@ -11,7 +11,7 @@ namespace ModScript
             Compiler.Prepare();
             if (args.Length == 1)
             {
-                Compiler.Run(File.ReadAllText(args[0]));
+                Compiler.Run(File.ReadAllText(args[0]), new FileInfo(args[0]).Name);
                 Console.Read();
                 return;
             }
@@ -19,7 +19,7 @@ namespace ModScript
             {
                 Console.Write("ModScript> ");
                 string inp = Console.ReadLine();
-                Compiler.Run(inp);
+                Compiler.Run(inp, "<console>");
                 Console.WriteLine();
             }
         }

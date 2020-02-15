@@ -84,6 +84,8 @@ namespace ModScript
             { "Sqrt", new Tuple<Predef, int>(PredefFunc.sqrt, 1)},
 
             { "File", new Tuple<Predef, int>(PredefFunc.FileF, 0) },
+            { "String", new Tuple<Predef, int>(PredefFunc.String, 1) },
+            { "List", new Tuple<Predef, int>(PredefFunc.List, 0) },
 
             { "GetType", new Tuple<Predef, int>(PredefFunc.GetType, 1)},
             { "ParseNumber", new Tuple<Predef, int>(PredefFunc.ParseNumber, 1)},
@@ -206,6 +208,14 @@ namespace ModScript
             File.WriteAllLines(ctx.varlist["_ARG0"].value.text, ctx.varlist["_ARG1"].value.values.ConvertAll(x => x.ToString()));
             return res.Succes(new LToken(TokenType.VALUE, Value.NULL, ctx.parentEntry).SetContext(ctx));
         }
+        #endregion
+        #region Primitive
+        public static RTResult String(Context ctx) =>
+            new RTResult().Succes(new LToken(TokenType.VALUE, new Value(ctx.varlist["_ARG0"].value.ToString()), ctx.parentEntry).SetContext(ctx));
+
+        public static RTResult List(Context ctx) =>
+            new RTResult().Succes(new LToken(TokenType.VALUE, new Value(new List<Value>()), ctx.parentEntry).SetContext(ctx));
+
         #endregion
         #region Miscellaneous
         public static RTResult GetType(Context ctx)

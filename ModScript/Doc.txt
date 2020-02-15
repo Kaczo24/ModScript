@@ -1,4 +1,8 @@
-﻿Math:
+﻿Comments:
+	// text : one-line comment
+	/* text */ : multi-line comment
+
+Math:
 	+ : addition
 	- : substraction
 	* : multiplication

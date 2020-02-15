@@ -101,44 +101,46 @@ namespace ModScript
 
         public Value GetProperty(string prop)
         {
+            if (type == "FUNC")
+                if (function.InnerValues.ContainsKey(prop))
+                    return function.InnerValues[prop].value;
             switch (prop)
             {
                 case "length":
                     return InnerValue.length(this);
                 default:
-                    if (type == "FUNC")
-                        if (function.InnerValues.ContainsKey(prop))
-                            return function.InnerValues[prop].value;
                     return NULL;
             }
         }
 
         public Value SetProperty(string prop, LToken val)
         {
+            if (type == "FUNC")
+            {
+                if (function.InnerValues.ContainsKey(prop))
+                    if (val.value.type == "FUNC")
+                        val.value.function.InnerValues.parent = function.InnerValues;
+                return (function.InnerValues[prop] = val).value;
+            }
             switch (prop)
             {
                 default:
-                    if (type == "FUNC")
-                    {
-                        if (function.InnerValues.ContainsKey(prop))
-                        if (val.value.type == "FUNC")
-                            val.value.function.InnerValues.parent = function.InnerValues;
-                        return (function.InnerValues[prop] = val).value;
-                    }
                     return NULL;
             }
         }
 
         public RTResult CallProperty(string prop, List<LToken> args, Context _context, TextPosition pos)
         {
+            if (type == "FUNC")
+                if (function.InnerValues.ContainsKey(prop))
+                    return function.InnerValues[prop].value.function.Copy().Execute(args, _context, pos);
             switch (prop)
             {
                 case "Contains":
                     return InnerValue.Contains(this, args, _context, pos);
+                case "ToString":
+                    return InnerValue.toString(this, args, _context, pos);
                 default:
-                    if (type == "FUNC")
-                        if (function.InnerValues.ContainsKey(prop))
-                            return function.InnerValues[prop].value.function.Copy().Execute(args, _context, pos);
                     return new RTResult().Failure(new RuntimeError(pos, prop + " in " + type + " is not a function.", _context));
             }
         }

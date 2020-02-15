@@ -228,9 +228,10 @@ namespace ModScript
                         return res.Failure(new RuntimeError(node.val.position, "Run statement requires a string argument.", context));
                     if (!System.IO.File.Exists(Ot.value.text))
                         return res.Failure(new RuntimeError(Ot.position, $"File {Ot.value.text} does not exist.", context));
-                    if(!Compiler.Run(System.IO.File.ReadAllText(Ot.value.text), new System.IO.FileInfo(Ot.value.text).Name))
-                        return res.Failure(new Error());
-                    return res.Succes(new LToken(TokenType.VALUE, Value.NULL, node.val.position));
+                    Ot = res.Register(Compiler.Run(System.IO.File.ReadAllText(Ot.value.text), new System.IO.FileInfo(Ot.value.text).Name));
+                    if (res.error != null)
+                        return res;
+                    return res.Succes(Ot);
                 default:
                     throw new Exception("Visit not defined");
             }

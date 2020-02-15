@@ -89,8 +89,8 @@ Protopical inhatitance :
 
 
 
-Predefined Functions:
-	Global:
+Predefined Functions
+	Global
 		Print(arg0) : prints arg0 to console
 		Printl(arg0) : prints arg0 to console and ends the line
 		Input() : requests a line of text from console, and returns it
@@ -98,16 +98,19 @@ Predefined Functions:
 
 		Sqrt(arg0) : returns a square root of arg0
 
-		ReadText(arg0) : returns all text in file named arg0
-		ReadLines(arg0) : returns all lines as a list in file named arg0
-		WriteText(arg0, arg1) : writes arg1 to file named arg0
-		WriteLines(arg0, arg1) : writes arg1(list of lines) to file named arg0
-
 		GetType(arg0) : returns a string of the name of type of arg0
 		ParseNumber(arg0) : tries to parse arg0(text) to number, and returns it
+
+	File()
+		File.ReadText(arg0) : returns all text in file named arg0
+		File.ReadLines(arg0) : returns all lines as a list in file named arg0
+		File.WriteText(arg0, arg1) : writes arg1 to file named arg0
+		File.WriteLines(arg0, arg1) : writes arg1(list of lines) to file named arg0
+
+		
 	
-	String:
+	String(arg0) : returns a string version of the arg0
 		V.Contains(arg0) : test for occurance of arg0 in V
 
-	List:
+	List() : returns an empty list
 		V.Contains(arg0) : test for occurance of arg0 in V

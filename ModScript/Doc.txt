@@ -84,10 +84,11 @@ Class-like data structure:
 		return this; : return of created object
 	}
 
-Protopical inhatitance : 
+Protopical inhatitance (anywhere): 
 	IDENTIFIER1 << IDENTIFIER2 = {expresion}; : creates a public variable in ID1, named ID2 with default value of {expresion} 
 
-
+Clasical inhatitance (inside the function):
+	Super << IDENTIFIER(arg1, arg2 ...) : passes all public variables from function IDENTIFIER to this
 
 Predefined Functions
 	Global

@@ -32,6 +32,7 @@ namespace ModScript
             "continue",
             "run",
             "public",
+            "new",
             "Super"
     };
 

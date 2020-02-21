@@ -72,7 +72,7 @@ namespace ModScript
 
         public bool isMakeValid()
         {
-            if (TYPE != "VarMake")
+            if (TYPE != "VarMake" && TYPE != "PublicVarMake")
                 return false;
             return !right.isCallic();
         }

@@ -76,14 +76,15 @@ namespace ModScript
                     if (Compiler.forbidden.Contains(Ot.value.function.name.value.text))
                         return res.Failure(new RuntimeError(node.val.position, $"{Ot.value.function.name.value.text} is a predefined, unmutable variable", context));
                     {
-                        LToken Tok = res.Register(Visit(node.PNodes[1], context));
+                        Ot.value.function.body.PNodes.Add(new PNode("PublicVarMake", node.val, node.PNodes[1]));
+                       /* LToken Tok = res.Register(Visit(node.PNodes[1], context));
                         if (res.error != null)
                             return res;
                         if (Tok.value.type == "FUNC")
                             Tok.value.function.InnerValues.parent = Ot.value.function.InnerValues;
                         if (Ot.value.function.InnerValues.parent == null)
                             Ot.value.function.InnerValues.parent = new VarList(null);
-                        Ot.value.function.InnerValues.parent[node.val.value.text] = Tok;
+                        Ot.value.function.InnerValues.parent[node.val.value.text] = Tok.SetPM();*/
                     }
                     return res.Succes(Ot);
                 case "GetProperty":
@@ -199,6 +200,13 @@ namespace ModScript
                     return VisitBody(node, BracketContext(context));
                 case "Body":
                     return VisitBody(node, context);
+                case "NEW":
+                    Ot = res.Register(Visit(node.right, context));
+                    if (res.error != null)
+                        return res;
+                    if (Ot.value.type != "FUNC")
+                        return res.Failure(new RuntimeError(node.val.position, "'new' copy can be only aplied to functions.", context));
+                    return res.Succes(Ot.Copy(false));
                 case "RETURN":
                     Ot = res.Register(Visit(node.right, context));
                     if (res.error != null)
@@ -242,7 +250,7 @@ namespace ModScript
             RTResult res = new RTResult();
             LToken Ot;
             List<PNode> PNodes = new List<PNode>(node.PNodes);
-            foreach (PNode n in PNodes.FindAll(x => x.TYPE == "FuncDef" || x.TYPE == "SUPER" || x.TYPE == "RUN" || x.TYPE == "Prototype" || x.isMakeValid()))
+            foreach (PNode n in PNodes.FindAll(x => x.TYPE == "FuncDef" || x.TYPE == "PublicFuncDeff" || x.TYPE == "SUPER" || x.TYPE == "RUN" || x.TYPE == "Prototype" || x.isMakeValid()))
             {
                 Ot = res.Register(Visit(n, context));
                 if (res.error != null)
@@ -329,7 +337,7 @@ namespace ModScript
             if (res.error != null)
                 return res;
             if (toCall.value.function == null)
-                return res.Failure(new RuntimeError(node.PNodes[0].val.position, $"{node.PNodes[0].val.value.text} is not a function.", context));
+                return  res.Failure(new RuntimeError(node.PNodes[0].val.position, $"{node.PNodes[0].val.value.text} is not a function.", context));
             List<LToken> args = new List<LToken>();
             for (int n = 1; n < node.PNodes.Count; n++)
             {
@@ -337,7 +345,7 @@ namespace ModScript
                 if (res.error != null)
                     return res;
             }
-            LToken t = res.Register(toCall.value.function.Copy().Execute(args, context, toCall.position));
+            LToken t = res.Register(toCall.value.function.Execute(args, context, toCall.position));
             if (res.error != null)
                 return res;
             return res.Succes(t.SetContext(context));  
@@ -360,6 +368,11 @@ namespace ModScript
                 }
                 else if (!context.varlist.ContainsKey(node.val.value.text) && !context.GetFunction().InnerValues.ContainsKey(node.val.value.text))
                     return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is not Defined", context));
+            }
+            else if (node.TYPE == "PublicVarMake")
+            {
+                if (context.GetFunction().InnerValues.ContainsKey(node.val.value.text))
+                    return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is already Defined", context));
             }
             else if (context.varlist.ContainsKey(node.val.value.text))
                 return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is already Defined", context));
@@ -627,7 +640,12 @@ namespace ModScript
 
         public VarList Copy()
         {
-            VarList v = new VarList(parent);
+            VarList v;
+            if (parent != null)
+                v = new VarList(parent.Copy());
+            else
+
+                v = new VarList(parent);
             foreach (string s in Keys)
                 v[s] = this[s];
             return v;

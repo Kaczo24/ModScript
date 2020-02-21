@@ -1,13 +1,15 @@
 
 function Vector(X, Y)
 {
-	public let x = X;
+	x = X;
 	public let y = Y;
 	public function mag() => Sqrt(x^2 + y^2);
 	
 
 	return this;
 }
+
+Vector << x;
 
 Vector << mult = function(M) {
 	x *= M;
@@ -20,7 +22,6 @@ function Vector3(X, Y, Z)
 	
 	public let z = Z;
 	mag = function() => Sqrt(x^2 + y^2 + z^2);
-
 	return this;
 }
 

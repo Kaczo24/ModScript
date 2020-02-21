@@ -142,7 +142,8 @@ namespace ModScript
                 if (current.type == TokenType.RPAR)
                 {
                     res.Register(Next());
-                    return res.Succes(e);
+                    res.isInnnerCall = true;
+                    return res.Succes(e, true);
                 }
                 else
                     return res.Failure(new InvalidSyntaxError(current.position, "Expected ')'"));
@@ -170,7 +171,8 @@ namespace ModScript
             if (t.type == TokenType.IDENTIFIER)
             {
                 res.Register(Next());
-                return res.Succes(new PNode("VarGet", t));
+                res.isInnnerCall = true;
+                return res.Succes(new PNode("VarGet", t), true);
             }
             if (t.type == TokenType.VALUE)
             {
@@ -182,9 +184,28 @@ namespace ModScript
                 PNode fd = res.Register(Func_Def());
                 if (res.error != null)
                     return res;
-                return res.Succes(fd);
+                res.isInnnerCall = true;
+                return res.Succes(fd, true);
             }
             return res.Failure(new InvalidSyntaxError(current.position, "Expected number, identifier, plus, minus or parenthesis"));
+        }
+
+        ParseResult newer()
+        {
+            ParseResult res = new ParseResult();
+            bool n = false;
+            LToken t = current;
+            if(t.type == TokenType.KEYWORD && t.value.text == "new")
+            {
+                n = true;
+                res.Register(Next());
+            }
+            PNode node = res.Register(atom());
+            if (res.error != null)
+                return res;
+            if(n && res.isInnnerCall)
+                return res.Succes(new PNode("NEW", t, node));
+            return res.Succes(node);
         }
 
         ParseResult call(ParseResult toCall)
@@ -277,7 +298,7 @@ namespace ModScript
             {
                 LToken op = current;
                 res.Register(Next());
-                node = res.Register(call(atom()));
+                node = res.Register(call(newer()));
                 if (res.error != null)
                     return res;
                 if (op.type == TokenType.INC)
@@ -297,11 +318,11 @@ namespace ModScript
                 pns.Add(exp);
                 return res.Succes(PNode.GetCall("InnerAsign", node.PNodes[0], pns));
             }
-            node = res.Register(call(atom()));
+            node = res.Register(call(newer()));
             if (current.type == TokenType.INC || current.type == TokenType.DEC)
             {
                 LToken op = current;
-                LToken ed = current.Copy();
+                LToken ed = current.Copy(false);
                 if (!res.isInnnerCall && node.TYPE != "VarGet")
                     return res.Failure(new InvalidSyntaxError(op.position, "Increment and decrement operators can only edit immediate variables"));
                 res.Register(Next());

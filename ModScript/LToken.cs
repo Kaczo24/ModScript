@@ -64,7 +64,7 @@ namespace ModScript
         public TokenType type;
         public Value value;
         public TextPosition position { get; set; }
-
+        public bool protomove = false;
         public LToken(TokenType _type, TextPosition pos)
         {
             type = _type;
@@ -75,6 +75,11 @@ namespace ModScript
             type = _type;
             value = _value;
             position = pos.Copy();
+        }
+        public LToken SetPM()
+        {
+            protomove = true;
+            return this;
         }
         public LToken(TokenType _type)
         {
@@ -96,13 +101,18 @@ namespace ModScript
             return this;
         }
 
-        public LToken Copy()
+        public LToken Copy(bool b)
         {
-            if (position == null)
-                return new LToken(type, value.Copy(), null);
-            if (value == null)
-                return new LToken(type, null, position.Copy());
-            return new LToken(type, value.Copy(), position.Copy());
+            TextPosition p = null;
+            Value v = null;
+            if (position != null)
+                p = position.Copy();
+            if (value != null)
+                if(b)
+                    v = value.Copy(b);
+                else
+                    v = value.Copy(false);
+            return new LToken(type, v, p);
         }
 
         public override string ToString()

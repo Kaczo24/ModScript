@@ -5,13 +5,14 @@ namespace ModScript
     class Value : IEquatable<Value>
     {
         public static double GetNumber(string s) => double.Parse(s.Replace('.', ','));
-        public string text, type;
+        public string text;//{ get; private set; }
+        public string type;
         public bool isNumber { get { return type == "INT" || type == "FLOAT"; } }
-        public double Float;
+        public double Float { get; private set; }
         public List<Value> values;
         public Function function;
         public Context context;
-        public int integer;
+        public int integer { get; private set; }
         public bool boolean = false;
 
 
@@ -133,7 +134,7 @@ namespace ModScript
         {
             if (type == "FUNC")
                 if (function.InnerValues.ContainsKey(prop))
-                    return function.InnerValues[prop].value.function.Copy().Execute(args, _context, pos);
+                    return function.InnerValues[prop].value.function.Execute(args, _context, pos);
             switch (prop)
             {
                 case "Contains":
@@ -145,13 +146,16 @@ namespace ModScript
             }
         }
 
-        public Value Copy()
+        public Value Copy(bool b)
         {
             Value v = new Value();
             v.boolean = boolean;
             v.Float = Float;
             if (type == "FUNC")
-                v.function = function.Copy();
+                if(b)
+                    v.function = function.Copy(b).SetParent(this);
+                else
+                    v.function = function.Copy().SetParent(this);
             v.integer = integer;
             v.text = text;
             v.type = type;

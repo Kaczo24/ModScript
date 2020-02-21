@@ -53,6 +53,7 @@ call			: call LSQBR NUMBER RSQBR
 				: call DOT INDETIFIER
 				: atom
 
+newer			: KEYWORD:new? atom 
 
 atom			: VALUE|INDETIFIER
 				: list-expr

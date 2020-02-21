@@ -18,25 +18,21 @@ namespace ModScript
         {
             foreach (string k in Function.Predefs.Keys)
             {
-                List<string> args = new List<string>();
-                int m = Function.Predefs[k].Item2;
-                for (int n = 0; n < m; n++)
-                    args.Add("_ARG" + n);
-                globalVar[k] = new LToken(TokenType.VALUE, new Value(new Function(new LToken(TokenType.VALUE, new Value(k).SetContext(root), new TextPosition(0, 0, 0, "CONST", "")), null, args, root)).SetContext(root), new TextPosition(0, 0, 0, "CONST", ""));
+                globalVar[k] = new LToken(TokenType.VALUE, new Value(new Function(new LToken(TokenType.VALUE, new Value(k).SetContext(root), new TextPosition(0, 0, 0, "CONST", "")), null, null, root)).SetContext(root), new TextPosition(0, 0, 0, "CONST", ""));
             }
             root.varlist = globalVar;
             foreach (string s in globalVar.Keys)
                 forbidden.Add(s);
+            PredefFunc.Insert(globalVar["File"].value.function, new Dictionary<string, Predef>()
+            {
+                { "ReadText", PredefFunc.ReadText},
+                { "ReadLines", PredefFunc.ReadLines},
+                { "WriteText", PredefFunc.WriteText},
+                { "WriteLines", PredefFunc.WriteLines},
+            });
+
             foreach (string s in Function.Special.Keys)
                 forbidden.Add(s);
-            PredefFunc.Insert(globalVar["File"].value.function, new Dictionary<string, Tuple<Predef, int>>()
-            {
-                { "ReadText", new Tuple<Predef, int>(PredefFunc.ReadText, 1)},
-                { "ReadLines", new Tuple<Predef, int>(PredefFunc.ReadLines, 1)},
-                { "WriteText", new Tuple<Predef, int>(PredefFunc.WriteText, 2)},
-                { "WriteLines", new Tuple<Predef, int>(PredefFunc.WriteLines, 2)},
-            });
-            forbidden.Add("File");
         }
 
         public static RTResult Run(string line, string fName)

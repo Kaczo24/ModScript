@@ -30,6 +30,10 @@ namespace ModScript
                 { "WriteText", PredefFunc.WriteText},
                 { "WriteLines", PredefFunc.WriteLines},
             });
+            PredefFunc.Insert(globalVar["String"].value.function, new Dictionary<string, Predef>()
+            {
+                { "Concat", PredefFunc.Concat},
+            });
 
             foreach (string s in Function.Special.Keys)
                 forbidden.Add(s);

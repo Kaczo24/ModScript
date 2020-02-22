@@ -104,20 +104,20 @@ namespace ModScript
         }
         public static Dictionary<string, Predef> Predefs = new Dictionary<string, Predef>()
         {
-            { "Print",  PredefFunc.Print},
-            { "Printl", PredefFunc.Printl},
-            { "PrintAscii", PredefFunc.PrintAscii},
-            { "Input", PredefFunc.Input},
-            { "InputN",PredefFunc.InputN},
+            { "Print",  PredefFunc.Print },
+            { "Printl", PredefFunc.Printl },
+            { "PrintAscii", PredefFunc.PrintAscii },
+            { "Input", PredefFunc.Input },
+            { "InputN",PredefFunc.InputN },
 
-            { "Sqrt",PredefFunc.sqrt},
+            { "Sqrt", PredefFunc.sqrt },
 
-            { "File",PredefFunc.FileF },
-            { "String",PredefFunc.String },
-            { "List",PredefFunc.List },
+            { "File", PredefFunc.FileF },
+            { "String", PredefFunc.String },
+            { "List", PredefFunc.List },
 
-            { "GetType",PredefFunc.GetType},
-            { "ParseNumber",PredefFunc.ParseNumber},
+            { "GetType", PredefFunc.GetType },
+            { "ParseNumber", PredefFunc.ParseNumber },
 
         };
         public static Dictionary<string, Predef> Special = new Dictionary<string, Predef>();
@@ -312,6 +312,20 @@ namespace ModScript
             if (argN < 1)
                 return new RTResult().Succes(new LToken(TokenType.VALUE, new Value(""), ctx.parentEntry).SetContext(ctx));
             return new RTResult().Succes(new LToken(TokenType.VALUE, new Value(ctx.varlist["_ARG0"].value.ToString()), ctx.parentEntry).SetContext(ctx));
+        }
+        public static RTResult Concat(Context ctx, int argN)
+        {
+            RTResult res = new RTResult();
+            if (argN < 1)
+                return MinArgError(ctx, 1);
+            if (argN == 1 && ctx.varlist["_ARG0"].value.type == "LIST")
+                return res.Succes(new LToken(TokenType.VALUE, new Value(string.Join("", ctx.varlist["_ARG0"].value.values.ConvertAll(v=>v.ToString()))), ctx.parentEntry).SetContext(ctx));
+            if (argN == 2 && ctx.varlist["_ARG0"].value.type == "LIST" && ctx.varlist["_ARG1"].value.type == "STRING")
+                return res.Succes(new LToken(TokenType.VALUE, new Value(string.Join(ctx.varlist["_ARG1"].value.text, ctx.varlist["_ARG0"].value.values.ConvertAll(v => v.ToString()))), ctx.parentEntry).SetContext(ctx));
+            string s = "";
+            for (int n = 0; n < argN; n++)
+                s += ctx.varlist["_ARG" + n].value.ToString();
+            return res.Succes(new LToken(TokenType.VALUE, new Value(s), ctx.parentEntry).SetContext(ctx));
         }
         public static RTResult List(Context ctx, int argN)
         {

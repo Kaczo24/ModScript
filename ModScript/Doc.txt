@@ -88,11 +88,15 @@ Class-like data structure:
 		return this; : return of created object
 	}
 
+Class instantiation:
+	let IDENTIFIER1 = new IDENTIFIER2(arg0, arg1 ...) : creates new instance of IDENTIFIER2 class, and passes down the args. 
+	IDENTIFIER(arg0, arg1 ...) : asigns args as "static" 
+
 Protopical inhatitance (anywhere): 
 	IDENTIFIER1 << IDENTIFIER2 = {expresion}; : creates a public variable in ID1, named ID2 with default value of {expresion} 
 
 Clasical inhatitance (inside the function):
-	Super << IDENTIFIER(arg1, arg2 ...) : passes all public variables from function IDENTIFIER to this
+	Super << IDENTIFIER(arg0, arg1 ...) : passes all public variables from function IDENTIFIER to this
 
 Predefined Functions
 	Global
@@ -106,16 +110,26 @@ Predefined Functions
 		GetType(arg0) : returns a string of the name of type of arg0
 		ParseNumber(arg0) : tries to parse arg0(text) to number, and returns it
 
-	File()
+	File(arg0) : saves arg0 as path
 		File.ReadText(arg0) : returns all text in file named arg0
 		File.ReadLines(arg0) : returns all lines as a list in file named arg0
 		File.WriteText(arg0, arg1) : writes arg1 to file named arg0
 		File.WriteLines(arg0, arg1) : writes arg1(list of lines) to file named arg0
+		V.ReadText() : returns all text in file at path
+		V.ReadLines() : returns all lines as a list in file at path
+		V.WriteText(arg0) : writes arg0 to file at path
+		V.WriteLines(arg0) : writes arg0(list of lines) to file at path
 
 		
 	
 	String(arg0) : returns a string version of the arg0
+		String.Concat(arg0) : if arg0 is list, converts all elements to strings(saving original), and concats them into a single string
+		String.Concat(arg0, arg1) : if arg0 is list and arg1 is string,
+			converts all elements to strings(saving original), and concats them into a single string spaced with arg1
+		String.Concat(arg0, arg1, arg2...) : converts all args to strings(saving original), and concats them into a single string
 		V.Contains(arg0) : test for occurance of arg0 in V
+		V.Insert(arg0, arg1) : inserts arg1 at position arg0, shifting forward
 
 	List() : returns an empty list
 		V.Contains(arg0) : test for occurance of arg0 in V
+		V.Insert(arg0, arg1) : inserts arg1 at position arg0, shifting forward

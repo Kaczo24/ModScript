@@ -37,5 +37,31 @@ namespace ModScript
                 return new RTResult().Failure(new RuntimeError(pos, "Function 'Contains' requres 0 arguments.", _context));
             return new RTResult().Succes(new LToken(TokenType.VALUE, new Value(v.ToString()), pos).SetContext(_context));
         }
+
+        public static RTResult Insert(Value v, List<LToken> args, Context _context, TextPosition pos)
+        {
+            RTResult res = new RTResult();
+            if (args.Count != 2)
+                return res.Failure(new RuntimeError(pos, "Function 'Insert' requres 2 arguments.", _context));
+            if (args[0].value.type != "INT")
+                return res.Failure(new RuntimeError(pos, "Function 'Insert' a int argument1.", _context));
+            if (v.type == "STRING")
+            {
+                if (args[0].value.integer > v.text.Length)
+                    return res.Failure(new RuntimeError(pos, "Insertion position cannot be greater then string length", _context));
+                v.text.Insert(args[0].value.integer, args[1].value.ToString());
+                return res.Succes(new LToken(TokenType.VALUE, v, pos).SetContext(_context));
+            }
+            if (v.type == "LIST")
+            {
+                if (args[0].value.integer > v.values.Count)
+                    return res.Failure(new RuntimeError(pos, "Insertion position cannot be greater then list length", _context));
+                v.values.Insert(args[0].value.integer, args[1].value);
+                return res.Succes(new LToken(TokenType.VALUE, v, pos).SetContext(_context));
+            }
+            return res.Failure(new RuntimeError(pos, "Function 'Insert' can be used only for string and list types.", _context));
+
+        }
     }
+
 }

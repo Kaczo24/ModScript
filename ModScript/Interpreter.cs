@@ -18,6 +18,7 @@ namespace ModScript
                     return res.Succes(node.val.SetContext(context));
                 case "VarAsign":
                 case "PublicVarMake":
+                case "PublicPrototype":
                 case "VarMake":
                     Ot = res.Register(VisitVarAsign(node, context));
                     if (res.error != null)
@@ -75,17 +76,7 @@ namespace ModScript
                         return res.Failure(new RuntimeError(Ot.position, "Value to prototype into has to be a function.", context));
                     if (Compiler.forbidden.Contains(Ot.value.function.name.value.text))
                         return res.Failure(new RuntimeError(node.val.position, $"{Ot.value.function.name.value.text} is a predefined, unmutable variable", context));
-                    {
-                        Ot.value.function.body.PNodes.Add(new PNode("PublicVarMake", node.val, node.PNodes[1]));
-                       /* LToken Tok = res.Register(Visit(node.PNodes[1], context));
-                        if (res.error != null)
-                            return res;
-                        if (Tok.value.type == "FUNC")
-                            Tok.value.function.InnerValues.parent = Ot.value.function.InnerValues;
-                        if (Ot.value.function.InnerValues.parent == null)
-                            Ot.value.function.InnerValues.parent = new VarList(null);
-                        Ot.value.function.InnerValues.parent[node.val.value.text] = Tok.SetPM();*/
-                    }
+                    Ot.value.function.body.PNodes.Add(new PNode("PublicPrototype", node.val, node.PNodes[1]));
                     return res.Succes(Ot);
                 case "GetProperty":
                     Ot = res.Register(Visit(node.right, context));
@@ -172,11 +163,12 @@ namespace ModScript
                     return res.Succes(new LToken(TokenType.VALUE, Value.NULL, node.val.position));
                 case "FOR":
                     {
-                        Context ctx = BracketContext(context);
-                        res.Register(Visit(node.PNodes[0], ctx));
-                        Ot = res.Register(Visit(node.PNodes[1], ctx));
+                        Context CON = BracketContext(context);
+                        res.Register(Visit(node.PNodes[0], CON));
+                        Ot = res.Register(Visit(node.PNodes[1], CON));
                         if (res.error != null)
                             return res;
+                        Context ctx = BracketContext(CON);
                         while (Ot.value.boolean)
                         {
                             Ot = res.Register(Visit(node.PNodes[3], ctx));
@@ -186,7 +178,7 @@ namespace ModScript
                                 break;
                             if (Ot.type == TokenType.RETURN)
                                 return res.Succes(Ot);
-                            ctx = BracketContext(context);
+                            ctx = BracketContext(CON);
                             res.Register(Visit(node.PNodes[2], ctx));
                             if (res.error != null)
                                 return res;
@@ -250,7 +242,14 @@ namespace ModScript
             RTResult res = new RTResult();
             LToken Ot;
             List<PNode> PNodes = new List<PNode>(node.PNodes);
-            foreach (PNode n in PNodes.FindAll(x => x.TYPE == "FuncDef" || x.TYPE == "PublicFuncDeff" || x.TYPE == "SUPER" || x.TYPE == "RUN" || x.TYPE == "Prototype" || x.isMakeValid()))
+            foreach (PNode n in PNodes.FindAll(x => 
+                x.TYPE == "FuncDef" ||
+                x.TYPE == "PublicPrototype" ||
+                x.TYPE == "PublicFuncDeff" ||
+                x.TYPE == "SUPER" ||
+                x.TYPE == "RUN" ||
+                x.TYPE == "Prototype" ||
+                x.isMakeValid()))
             {
                 Ot = res.Register(Visit(n, context));
                 if (res.error != null)
@@ -356,7 +355,7 @@ namespace ModScript
             RTResult res = new RTResult();
             if (Compiler.forbidden.Contains(node.val.value.text))
                 return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is a predefined, unmutable variable", context));
-            if (node.TYPE == "PublicVarMake")
+            if (node.TYPE == "PublicVarMake" || node.TYPE == "PublicPrototype")
                 if (context.GetFunction() == null)
                     return res.Failure(new RuntimeError(node.val.position, "Public variables have to be declared in an object.", context));
             if (node.TYPE == "VarAsign")
@@ -374,15 +373,16 @@ namespace ModScript
                 if (context.GetFunction().InnerValues.ContainsKey(node.val.value.text))
                     return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is already Defined", context));
             }
-            else if (context.varlist.ContainsKey(node.val.value.text))
-                return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is already Defined", context));
+            else if (node.TYPE != "PublicPrototype")
+                if (context.varlist.ContainsKey(node.val.value.text))
+                    return res.Failure(new RuntimeError(node.val.position, $"{node.val.value.text} is already Defined", context));
 
             LToken n = res.Register(Visit(node.right, context));
             if (res.error != null)
                 return res;
             LToken Val = new LToken(TokenType.VALUE, n.value, node.val.position).SetContext(n.value.context);
             Function f = context.GetFunction();
-            if (node.TYPE == "PublicVarMake")
+            if (node.TYPE == "PublicVarMake" || node.TYPE == "PublicPrototype")
             {
                 if (Val.value.type == "FUNC")
                     Val.value.function.InnerValues.parent = f.InnerValues;
